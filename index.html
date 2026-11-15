@@ -122,7 +122,10 @@
   .orow.drop-before{box-shadow:0 -3px 0 var(--primary)}
   .orow.drop-after{box-shadow:0 3px 0 var(--primary)}
   .handle{touch-action:none;cursor:grab;font-size:20px;color:var(--muted);padding:8px 10px;user-select:none}
-  .oname{flex:1;min-width:0}
+  .oname{flex:1;min-width:0;cursor:pointer}
+  .oname small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .radio{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;margin-top:8px;cursor:pointer}
+  .radio input{width:20px;height:20px;accent-color:var(--primary)}
   .obtn{background:var(--primary-soft);color:var(--primary);width:38px;height:38px;border-radius:8px;font-size:14px;flex:none}
   .big-price{font-size:28px;font-weight:700;color:var(--primary);text-align:center;margin:4px 0 10px}
 </style>
@@ -294,7 +297,7 @@ function priceFor(competitorId, product){
     (p.productId === product.id || (p.productId == null && p.name === product.name)));
 }
 const pricesOf = cid => S.prices.filter(p => p.competitorId === cid).sort(byName);
-/* ---------- dia da pesquisa e regra do 0,01 ---------- */
+/* ---------- dia da pesquisa (sem preço no dia = vazio no Excel) ---------- */
 const NOT_FOUND = 0.01;
 const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
 const dayLabel = ts => new Date(ts).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -302,11 +305,25 @@ function researchDay(cid){
   let m = 0; for (const p of S.prices) if (p.competitorId === cid && p.updatedAt > m) m = p.updatedAt;
   return m || null;
 }
-/* preço válido = atualizado no dia da última pesquisa daquele concorrente */
+/* preço válido = atualizado no dia da última pesquisa daquele concorrente (e não marcado como "não encontrado") */
 function dayPrice(cid, prod, rd){
   rd = rd === undefined ? researchDay(cid) : rd;
   const p = priceFor(cid, prod);
-  return p && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd) ? p : null;
+  return p && !p.notFound && p.price > 0 && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd) ? p : null;
+}
+/* marca como não encontrado no dia, mas guarda o último preço */
+function markNotFound(cid, prod){
+  const ex = priceFor(cid, prod), now = Date.now();
+  if (ex) { if (!ex.notFound) ex.priceAt = ex.priceAt || ex.updatedAt; ex.notFound = true; ex.check = false; ex.updatedAt = now; }
+  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price: null, notFound: true, updatedAt: now });
+}
+/* agrupa itens parecidos (pela 1ª palavra: ARROZ, FEIJÃO, CAFÉ…), mantendo a sua ordem dentro de cada grupo */
+const groupKey = name => (norm(name).split(/[^a-z0-9]+/).filter(Boolean)[0] || "");
+const groupLabel = name => (String(name).trim().split(/[^A-Za-zÀ-ÿ0-9]+/).filter(Boolean)[0] || "").toUpperCase();
+function groupedProducts(list){
+  const order = [], map = new Map();
+  for (const p of list || S.products) { const k = groupKey(p.name); if (!map.has(k)) { map.set(k, []); order.push(k); } map.get(k).push(p); }
+  return order.flatMap(k => map.get(k));
 }
 
 /* ---------- EAN-13 (mesma lógica do app) ---------- */
@@ -387,17 +404,28 @@ function makeXlsx(sheetName, rows, widths){
     ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet ${NS}><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData></worksheet>`]
   ]);
 }
-function xlsxAll(){
-  const comps = [...S.competitors].sort(byName).map(c => ({ c, rd: researchDay(c.id) }));
-  const rows = [["Produto", "Código de Barras", ...comps.map(x => x.c.name + (x.rd ? " (" + dayLabel(x.rd) + ")" : ""))]];
-  for (const p of S.products) rows.push([p.name, p.barCode, ...comps.map(x => { const d = dayPrice(x.c.id, p, x.rd); return d ? d.price : NOT_FOUND; })]);
-  return makeXlsx("Pesquisa de Preços", rows, [55, 18, ...comps.map(() => 20)]);
+/* opt.fill: "vazio" = sem preço no dia fica em branco; "ultimo" = usa o último preço guardado */
+function cellPrice(cid, p, rd, fill){
+  const d = dayPrice(cid, p, rd); if (d) return d.price;
+  if (fill === "ultimo") { const x = priceFor(cid, p); if (x && x.price > 0) return x.price; }
+  return "";
 }
-function xlsxOne(c){
+function xlsxAll(opt){
+  const fill = (opt && opt.fill) || "vazio";
+  const comps = [...S.competitors].sort(byName).map(c => ({ c, rd: researchDay(c.id) }));
+  const rows = [["Grupo", "Produto", "Código de Barras", ...comps.map(x => x.c.name + (x.rd ? " (" + dayLabel(x.rd) + ")" : ""))]];
+  for (const p of groupedProducts()) rows.push([groupLabel(p.name), p.name, p.barCode, ...comps.map(x => cellPrice(x.c.id, p, x.rd, fill))]);
+  return makeXlsx("Pesquisa de Preços", rows, [14, 52, 18, ...comps.map(() => 20)]);
+}
+function xlsxOne(c, opt){
+  const fill = (opt && opt.fill) || "vazio";
   const rd = researchDay(c.id);
-  const rows = [["Nome", "Código de Barras", "Preço" + (rd ? " (" + dayLabel(rd) + ")" : ""), "Situação"]];
-  for (const p of S.products) { const d = dayPrice(c.id, p, rd); rows.push([p.name, p.barCode, d ? d.price : NOT_FOUND, d ? "encontrado" : "não encontrado"]); }
-  return makeXlsx("Produtos", rows, [55, 18, 16, 16]);
+  const rows = [["Grupo", "Nome", "Código de Barras", "Preço" + (rd ? " (" + dayLabel(rd) + ")" : ""), "Situação"]];
+  for (const p of groupedProducts()) {
+    const d = dayPrice(c.id, p, rd), v = cellPrice(c.id, p, rd, fill);
+    rows.push([groupLabel(p.name), p.name, p.barCode, v, d ? "encontrado" : (v !== "" ? "não encontrado (último preço)" : "não encontrado")]);
+  }
+  return makeXlsx("Produtos", rows, [14, 52, 18, 16, 26]);
 }
 
 /* ---------- salvar / compartilhar arquivo ---------- */
@@ -717,8 +745,9 @@ function rememberAlias(cid, text, productId, ean){
 /* ---------- salvar preço (sempre fica o último) ---------- */
 function setPrice(cid, prod, price, check){
   const ex = priceFor(cid, prod);
-  if (ex) { ex.price = price; ex.price2 = null; ex.check = !!check; ex.updatedAt = Date.now(); ex.productId = prod.id; }
-  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price, price2: null, check: !!check, updatedAt: Date.now() });
+  const now = Date.now();
+  if (ex) { ex.price = price; ex.price2 = null; ex.check = !!check; ex.notFound = false; ex.updatedAt = now; ex.priceAt = now; ex.productId = prod.id; }
+  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price, price2: null, check: !!check, updatedAt: now, priceAt: now });
 }
 
 /* ---------- modais ---------- */
@@ -1114,7 +1143,7 @@ function confirmScreen(ctx, message){
       list = list.slice(0, nq ? 8 : 4);
       box.innerHTML = list.length ? list.map(p => {
         const pr = priceFor(cid, p);
-        return `<button class="choice ${ctx.chosen === p ? "on" : ""}" data-id="${p.id}"><span>${esc(p.name)}</span>${pr ? `<small>atual ${brl(pr.price)}</small>` : ""}</button>`;
+        return `<button class="choice ${ctx.chosen === p ? "on" : ""}" data-id="${p.id}"><span>${esc(p.name)}</span>${pr && pr.price > 0 ? `<small>atual ${brl(pr.price)}</small>` : ""}</button>`;
       }).join("") : `<p class="hint">Busque o seu item acima e toque nele.</p>`;
     };
     if (box) {
@@ -1155,6 +1184,44 @@ function newCompetitorDialog(){
       if (!name) return;
       const c = { id: newId(), name }; S.competitors.push(c); S.selectedCompetitorId = c.id;
       save(); close(); render(); toast(`Concorrente "${name}" criado e selecionado`);
+    };
+  });
+}
+
+/* editar nome/código ou excluir um item da minha lista */
+function editProductDialog(prod){
+  modal(`<h2>Editar item</h2>
+    <form data-f>
+      <div class="field"><label>Nome</label><input data-n maxlength="120" value="${esc(prod.name)}"></div>
+      <div class="field" style="margin-top:18px"><label>Código de barras (opcional)</label><input data-b inputmode="numeric" maxlength="14" value="${esc(prod.barCode || "")}"></div>
+      <div class="foot" style="justify-content:space-between">
+        <button type="button" class="btn btn-ghost" data-del style="color:var(--red)">${IC.del} Excluir</button>
+        <span style="display:flex;gap:8px"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Salvar</button></span>
+      </div>
+    </form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    const b = m.querySelector("[data-b]"); b.oninput = () => { b.value = b.value.replace(/\D/g, ""); };
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = m.querySelector("[data-n]").value.trim().replace(/\s+/g, " ").toUpperCase();
+      if (!name) return toast("O nome não pode ficar vazio");
+      if (S.products.some(p => p !== prod && norm(p.name) === norm(name))) return toast("Já existe um item com esse nome");
+      prod.name = name; prod.barCode = b.value.trim();
+      for (const x of S.prices) if (x.productId === prod.id) { x.name = name; x.barCode = prod.barCode; }
+      save(); close(); render(); toast("Item atualizado");
+    };
+    m.querySelector("[data-del]").onclick = () => {
+      const n = S.prices.filter(x => x.productId === prod.id && x.price > 0).length;
+      confirmBox("Excluir item", `Excluir "${prod.name}" da sua lista?${n ? ` Os preços dele em ${n} concorrente(s) também serão apagados.` : ""}`, "Excluir", () => {
+        S.products = S.products.filter(p => p.id !== prod.id);
+        S.prices = S.prices.filter(x => x.productId !== prod.id);
+        S.links = S.links.filter(l => l.pid !== prod.id);
+        S.aliases = S.aliases.filter(a => a.productId !== prod.id);
+        for (const c of S.competitors) removePhoto(c.id, prod.id);
+        for (const p of S.pending) if (p.guess === prod.id) p.guess = null;
+        save(); render(); toast("Item excluído");
+      });
     };
   });
 }
@@ -1219,18 +1286,27 @@ function barcodeDialog(product){
   m => { m.querySelector("[data-x]").onclick = close; });
 }
 
-function exportDialog(blobFn, filename){
+function exportDialog(blobFn, filename, missing){
   const share = canShareFiles();
   modal(`<h2>Exportar pesquisa de preços</h2>
-    <p class="sub">${share ? "Deseja salvar ou compartilhar a planilha?" : "A planilha será salva em Excel (.xlsx)."}</p>
+    ${missing ? `<p class="sub" style="margin-top:-6px"><b>${missing}</b> ite${missing > 1 ? "ns ficaram" : "m ficou"} sem preço na última pesquisa. No Excel, como quer?</p>
+    <label class="radio"><input type="radio" name="fill" value="vazio" checked> <span><b>Deixar vazio</b> (não tinha na loja)</span></label>
+    <label class="radio"><input type="radio" name="fill" value="ultimo"> <span><b>Usar o último preço</b> guardado</span></label>`
+    : `<p class="sub">Todos os itens têm preço na última pesquisa.</p>`}
     <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button>
       ${share ? `<button class="btn btn-white" data-s>${IC.share} Compartilhar</button>` : ""}
       <button class="btn btn-orange" data-d>${IC.dl} Salvar</button></div>`,
   m => {
+    const opt = () => ({ fill: (m.querySelector('input[name="fill"]:checked') || {}).value || "vazio" });
     m.querySelector("[data-x]").onclick = close;
-    m.querySelector("[data-d]").onclick = () => { close(); saveFile(blobFn(), filename); };
-    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { close(); shareFile(blobFn(), filename); };
+    m.querySelector("[data-d]").onclick = () => { const o = opt(); close(); saveFile(blobFn(o), filename); };
+    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { const o = opt(); close(); shareFile(blobFn(o), filename); };
   });
+}
+function missingCount(cids){
+  let n = 0;
+  for (const cid of cids) { const rd = researchDay(cid); for (const p of S.products) if (!dayPrice(cid, p, rd)) n++; }
+  return n;
 }
 
 /* ---------- telas ---------- */
@@ -1239,6 +1315,7 @@ let query = "";
 let openCompetitorId = null;
 
 function render(){
+  if (organizing) return renderOrganize();
   const tab = (location.hash || "#pesquisa").slice(1);
   document.querySelectorAll("nav.bottom a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab || (tab === "" && a.dataset.tab === "pesquisa")));
   if (tab === "concorrentes") openCompetitorId ? renderCompetitor() : renderCompetitors();
@@ -1255,6 +1332,7 @@ function renderResearch(){
       <button class="btn btn-orange" id="addP">+ Produto</button>
       <button class="btn btn-orange" id="addC">+ Concorrente</button>
     </div>
+    <button class="btn btn-ghost" id="myItems" style="width:100%;margin-top:4px;color:var(--primary)">↕ Organizar, editar ou excluir meus itens</button>
     <div class="field" style="margin-top:18px">
       <label>Concorrente</label>
       <select id="sel">
@@ -1269,6 +1347,7 @@ function renderResearch(){
     <div class="list" id="list"></div>`;
   app.querySelector("#camBtn").onclick = () => openCamera(null);
   app.querySelector("#galBtn").onclick = openGallery;
+  app.querySelector("#myItems").onclick = () => { organizing = true; render(); window.scrollTo(0, 0); };
   app.querySelector("#pendBtn").onclick = pendingScreen;
   app.querySelector("#usr").onclick = switchUser;
   const q = app.querySelector("#q");
@@ -1289,6 +1368,7 @@ function drawList(){
   list.innerHTML = items.map(p => {
     const pr = cid ? priceFor(cid, p) : null;
     const old = pr && !dayPrice(cid, p, rdSel);
+    const nf = pr && pr.notFound && rdSel && dayKey(pr.updatedAt) === dayKey(rdSel);
     const k = cid ? photoKey(cid, p.id) : null;
     return `<div class="card">
       <div class="ptop">
@@ -1300,7 +1380,7 @@ function drawList(){
         <button class="btn btn-orange grow" data-cam="${p.id}">${IC.camera} Foto</button>
         <button class="btn btn-white grow" data-edit="${p.id}">${IC.edit} Preço</button>
       </div>
-      <div class="price ${pr ? "" : "empty"}">${pr ? (pr.check ? `<span class="chk">⚠ conferir</span> ` : "") + (old ? `<span class="stamp">antigo, de ${dayLabel(pr.updatedAt)} · </span>` : "") + "Preço: " + brl(pr.price) + (pr.price2 ? `<br><span class="stamp" style="font-size:14px">2º preço: ${brl(pr.price2)}</span>` : "") : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
+      <div class="price ${pr && !nf && pr.price > 0 ? "" : "empty"}">${nf ? `Não encontrado em ${dayLabel(pr.updatedAt)}` : pr && pr.price > 0 ? (pr.check ? `<span class="chk">⚠ conferir</span> ` : "") + (old ? `<span class="stamp">antigo, de ${dayLabel(pr.priceAt || pr.updatedAt)} · </span>` : "") + "Preço: " + brl(pr.price) + (pr.price2 ? `<br><span class="stamp" style="font-size:14px">2º preço: ${brl(pr.price2)}</span>` : "") : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
     </div>`;
   }).join("");
   fillThumbs(list);
@@ -1339,7 +1419,7 @@ function renderCompetitors(){
       <button id="rs">Restaurar backup</button>
     </div>
     <input type="file" id="file" accept=".json,application/json" hidden>`;
-  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, `Pesquisa_de_Precos_${safeName(USER)}.xlsx`);
+  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, `Pesquisa_de_Precos_${safeName(USER)}.xlsx`, missingCount(S.competitors.map(c => c.id)));
   app.querySelector("#sw").onclick = switchUser;
   app.onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
@@ -1377,17 +1457,16 @@ let organizing = false;
 function renderCompetitor(){
   const c = S.competitors.find(x => x.id === openCompetitorId);
   if (!c) { openCompetitorId = null; organizing = false; return renderCompetitors(); }
-  if (organizing) return renderOrganize(c);
   const rd = researchDay(c.id);
   const found = rd ? S.products.filter(p => dayPrice(c.id, p, rd)).length : 0;
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="back" aria-label="Voltar">${IC.back}</button>
       <h1>${esc(c.name)}</h1>
-      <button class="icon-btn" style="color:var(--red)" id="clr" aria-label="Limpar todos os preços" ${S.prices.some(p => p.competitorId === c.id) ? "" : "disabled"}>${IC.sweep}</button>
+      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${S.prices.some(p => p.competitorId === c.id) ? "" : "disabled"}>${IC.sweep} Zerar</button>
     </div>
     <div class="summary">
-      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${found}</b> encontrados · <b style="color:var(--muted)">${S.products.length - found}</b> sem preço (vão como R$ 0,01)` : "Nenhum preço pesquisado ainda. Todos os itens vão como R$ 0,01."}</div>
+      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${found}</b> encontrados · <b style="color:var(--muted)">${S.products.length - found}</b> sem preço` : "Nenhum preço pesquisado ainda."}</div>
       <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar</button>
     </div>
     <div class="list" id="clist">${S.products.map(p => {
@@ -1397,7 +1476,7 @@ function renderCompetitor(){
         <div style="flex:1;min-width:0">
           <p class="pname" style="font-size:15px;margin:2px 0 4px">${esc(p.name)}</p>
           ${ok ? `<div class="cprice">${pr.check ? `<span class="chk">⚠ conferir</span> ` : ""}${brl(pr.price)}</div>`
-               : `<div class="cprice nf">não encontrado · R$ 0,01</div>${pr ? `<div class="stamp">último preço ${brl(pr.price)} em ${dayLabel(pr.updatedAt)}</div>` : ""}`}
+               : `<div class="cprice nf">não encontrado</div>${pr && pr.price > 0 ? `<div class="stamp">último preço ${brl(pr.price)} em ${dayLabel(pr.priceAt || pr.updatedAt)}</div>` : ""}`}
         </div>
         <button class="icon-btn" style="color:var(--primary)" data-cam="${p.id}" aria-label="Tirar foto">${IC.camera}</button>
         <button class="icon-btn" style="color:var(--primary)" data-edit="${p.id}" aria-label="Editar preço">${IC.edit}</button>
@@ -1406,38 +1485,43 @@ function renderCompetitor(){
     <button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>`;
   app.querySelector("#back").onclick = () => { openCompetitorId = null; render(); };
   app.querySelector("#org").onclick = () => { organizing = true; render(); window.scrollTo(0, 0); };
-  app.querySelector("#clr").onclick = () => confirmBox("Limpar preços", `Apagar todos os preços de "${c.name}"?`, "Limpar", () => {
-    S.prices = S.prices.filter(p => p.competitorId !== c.id); removeCompetitorPhotos(c.id); save(); render();
+  app.querySelector("#clr").onclick = () => confirmBox("Zerar pesquisa", `Começar do zero a pesquisa de "${c.name}"? Todos os itens ficam como "não encontrado" (vazios no Excel). Os itens continuam na lista e os últimos preços ficam guardados.`, "Zerar", () => {
+    for (const p of S.products) markNotFound(c.id, p);
+    save(); render(); toast("Pesquisa zerada");
   });
   fillThumbs(app);
-  app.querySelector("#exp").onclick = () => exportDialog(() => xlsxOne(c), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`);
+  app.querySelector("#exp").onclick = () => exportDialog(o => xlsxOne(c, o), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`, missingCount([c.id]));
   app.onclick = e => {
     const b = e.target.closest("button[data-edit],button[data-del],button[data-view],button[data-cam]"); if (!b) return;
     const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.del || b.dataset.view || b.dataset.cam)); if (!prod) return;
     if (b.dataset.view) return photoViewer(photoKey(c.id, prod.id), prod.name);
     if (b.dataset.cam) return openCamera(prod, c.id);
     if (b.dataset.edit) return priceDialog(prod.name, dayPrice(c.id, prod), price => { setPrice(c.id, prod, price, false); save(); render(); });
-    if (b.dataset.del) {   // tirar o preço do dia = volta a "não encontrado"
-      confirmBox("Não encontrado", `Marcar "${prod.name}" como não encontrado (R$ 0,01)?`, "Marcar", () => {
-        removePhoto(c.id, prod.id); S.prices = S.prices.filter(x => !(x.competitorId === c.id && x.productId === prod.id)); save(); render();
+    if (b.dataset.del) {   // tirar o preço do dia = "não encontrado" (o último preço fica guardado)
+      confirmBox("Não encontrado", `Marcar "${prod.name}" como não encontrado nesta pesquisa? Fica vazio no Excel; o último preço fica guardado.`, "Marcar", () => {
+        markNotFound(c.id, prod); save(); render();
       });
     }
   };
 }
 
 /* ---------- organizar a ordem dos itens (vale para tudo) ---------- */
-function renderOrganize(c){
+function renderOrganize(){
   app.onclick = null;
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="done1" aria-label="Voltar">${IC.back}</button>
-      <h1>Organizar ordem</h1>
+      <h1>Meus itens</h1>
       <button class="btn btn-orange" id="done2" style="padding:9px 16px">Pronto</button>
     </div>
-    <p class="hint" style="margin:0 0 10px">Arraste pelo <b>☰</b> ou use <b>▲ ▼</b>. A ordem vale para todos os concorrentes, para a tela de pesquisa e para o Excel.</p>
+    <p class="hint" style="margin:0 0 8px">Arraste pelo <b>☰</b> ou use <b>▲ ▼</b> para mudar a ordem. <b>Toque no nome</b> para editar ou excluir o item.</p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-white" id="grp">🧺 Juntar parecidos</button>
+      <button class="btn btn-white" id="addP2">+ Produto</button>
+    </div>
     <div id="olist">${S.products.map(p => `<div class="orow" data-id="${p.id}">
       <span class="handle" aria-label="Arrastar">☰</span>
-      <span class="oname">${esc(p.name)}</span>
+      <span class="oname" role="button">${esc(p.name)}<small>${p.barCode ? esc(p.barCode) : "sem código"} · editar</small></span>
       <button class="obtn" data-up aria-label="Subir">▲</button><button class="obtn" data-dn aria-label="Descer">▼</button>
     </div>`).join("")}</div>`;
   const olist = app.querySelector("#olist");
@@ -1449,8 +1533,13 @@ function renderOrganize(c){
   };
   const done = () => { organizing = false; render(); window.scrollTo(0, 0); toast("Ordem salva"); };
   app.querySelector("#done1").onclick = done; app.querySelector("#done2").onclick = done;
+  app.querySelector("#addP2").onclick = newProductDialog;
+  app.querySelector("#grp").onclick = () => confirmBox("Juntar parecidos", "Colocar juntos os itens do mesmo tipo (arroz com arroz, feijão com feijão…)? A ordem dentro de cada tipo é mantida.", "Juntar", () => {
+    S.products = groupedProducts(); save(); render(); toast("Itens parecidos agrupados");
+  });
   olist.onclick = e => {
     const row = e.target.closest(".orow"); if (!row) return;
+    if (e.target.closest(".oname")) { const prod = S.products.find(p => p.id === +row.dataset.id); if (prod) editProductDialog(prod); return; }
     if (e.target.closest("[data-up]") && row.previousElementSibling) olist.insertBefore(row, row.previousElementSibling);
     else if (e.target.closest("[data-dn]") && row.nextElementSibling) olist.insertBefore(row.nextElementSibling, row);
     else return;
