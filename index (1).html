@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#003399">
+<title>DScanner – Pesquisa de Preço</title>
+<style>
+  :root{
+    --bg:#FFFFFF; --card:#FFFFFF; --card2:#F5F8FD; --primary:#003399; --primary-dark:#002270; --primary-soft:#E6ECF8;
+    --text:#1B2433; --muted:#6B7685; --red:#D32F2F; --line:#DCE3EE; --ok:#2E7D32; --warn:#E65100; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  button{font:inherit;cursor:pointer;border:0;border-radius:10px}
+  input{font:inherit}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 96px}
+  h1{color:var(--primary);font-size:22px;margin:4px 0 14px;letter-spacing:.5px}
+  .field{position:relative;margin-bottom:12px}
+  .field label{position:absolute;left:12px;top:-8px;background:var(--bg);padding:0 6px;font-size:12px;color:var(--muted)}
+  .field input,.field select{width:100%;padding:14px 12px;background:#fff;color:var(--text);
+    border:1px solid #C5CFDD;border-radius:8px;outline:none;font-size:16px;appearance:none}
+  .field select option{background:var(--card);color:var(--text)}
+  .field input:focus,.field select:focus{border-color:var(--primary)}
+  .field:focus-within label{color:var(--primary)}
+  .field .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  .btn{padding:12px 14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .btn-orange{background:var(--primary);color:#fff}
+  .btn-orange:active{background:var(--primary-dark)}
+  .btn-white{background:var(--primary-soft);color:var(--primary)}
+  .btn-ghost{background:transparent;color:var(--muted)}
+  .btn-ghost:hover{color:var(--primary)}
+  .btn-red{background:var(--red);color:#fff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .icon-btn{background:transparent;padding:8px;border-radius:50%;display:inline-flex}
+  .icon-btn:hover{background:#0f172a0d}
+  svg.i{width:22px;height:22px;fill:currentColor}
+  .list{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+  .card{background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--line);box-shadow:0 2px 6px #0f172a0f}
+  .card.alt{background:var(--card2)}
+  .pname{font-weight:700;font-size:16px;margin:0 0 10px}
+  .actions{display:flex;justify-content:space-between;gap:8px}
+  .price{color:var(--primary);font-weight:700;font-size:18px;text-align:right;margin-top:12px}
+  .price.empty{color:var(--muted);font-weight:500;font-size:15px}
+  .sub{color:var(--muted);font-size:14px}
+  .hint{color:var(--muted);font-size:14px;margin:6px 2px 0}
+  .empty-state{color:var(--muted);text-align:center;padding:48px 12px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .head h1{margin:0}
+  .comp{display:flex;align-items:center;gap:8px}
+  .comp .cname{flex:1;font-size:19px;font-weight:700;background:none;color:var(--text);text-align:left;padding:4px 0}
+  .comp .count{color:var(--primary);font-size:13px;white-space:nowrap}
+  .topbar{display:flex;align-items:center;gap:6px;margin:-4px 0 8px}
+  .topbar h1{flex:1;margin:0;color:var(--text);font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{color:var(--primary);font-weight:700;font-size:14px;white-space:nowrap}
+  nav.bottom{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -2px 8px #0f172a0f;border-top:1px solid var(--line);
+    display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+  nav.bottom a{flex:1;max-width:240px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 10px;
+    color:var(--muted);text-decoration:none;font-size:12px}
+  nav.bottom a.on{color:var(--primary)}
+  .fab{position:fixed;right:20px;bottom:84px;width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px #00339966}
+  /* modal */
+  .scrim{position:fixed;inset:0;background:#0f172a80;display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal{background:var(--bg);border:1px solid var(--line);box-shadow:0 10px 30px #0f172a33;border-radius:16px;width:100%;max-width:420px;padding:20px;max-height:90vh;overflow:auto}
+  .modal h2{margin:0 0 16px;font-size:19px}
+  .modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+  .barcode-box{background:#fff;border-radius:8px;padding:16px 10px;display:flex;justify-content:center}
+  .barcode-box svg{width:100%;max-width:340px;height:auto}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;
+    border-radius:10px;font-size:14px;z-index:30;max-width:90vw;text-align:center;box-shadow:0 4px 12px #0f172a40}
+  .menu-sep{height:1px;background:var(--line);margin:18px 0}
+  .small-links{display:flex;gap:16px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+  .small-links button{background:none;color:var(--muted);text-decoration:underline;font-size:14px}
+  .modal .foot.sticky{position:sticky;bottom:-20px;background:var(--bg);margin:14px -20px -20px;padding:12px 20px 16px;border-top:1px solid var(--line);flex-wrap:nowrap}
+  .modal .foot.sticky .btn{flex:1;padding:13px 8px;white-space:nowrap}
+  .modal .foot.sticky .btn-ghost{flex:0 0 auto}
+  .big-photo{width:100%;max-height:42vh;object-fit:contain;border-radius:10px;background:#EEF2F7;display:block}
+  .status{margin-top:10px;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .status.ok{color:var(--ok)}.status.warn{color:var(--warn);font-weight:600}
+  .spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:sp 0.8s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .choices{display:flex;flex-direction:column;gap:6px;margin-top:-4px}
+  .choice{background:var(--card);color:var(--text);text-align:left;padding:10px 12px;border:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .choice small{color:var(--muted);white-space:nowrap}
+  .choice.on{border-color:var(--primary);background:var(--primary-soft);font-weight:600}
+  .btn-cam{width:100%;margin-top:4px;padding:16px;font-size:17px}
+  .ptop{display:flex;gap:10px;align-items:flex-start}
+  .ptop .pname{flex:1}
+  .thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;flex:none;background:#EEF2F7;padding:0;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .actions .btn{padding:11px 10px}
+  .actions .grow{flex:1}
+  .stamp{color:var(--muted);font-size:12px;font-weight:400}
+  .done{text-align:center;color:var(--ok);font-size:22px;font-weight:700;margin:2px 0 4px}
+  .big-price{font-size:28px;font-weight:700;color:var(--primary);text-align:center;margin:4px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav class="bottom" id="nav">
+  <a href="#pesquisa" data-tab="pesquisa">
+    <svg class="i" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    Pesquisa</a>
+  <a href="#concorrentes" data-tab="concorrentes">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    Concorrentes</a>
+</nav>
+<div id="layer"></div>
+<input type="file" id="cam" accept="image/*" capture="environment" hidden>
+
+<script>
+"use strict";
+/* ============================================================
+   DScanner Web – versão web do app Android DScanner2026
+   Os dados ficam salvos no navegador (localStorage).
+   ============================================================ */
+
+const DEFAULT_PRODUCTS = [{"name": "ARROZ SEPE T1 5KG", "barCode": "7896009865657"}, {"name": "ARROZ SEPE PARB T1 5KG", "barCode": "7896009867293"}, {"name": "ARROZ SEPE PREMIUM T1 5KG", "barCode": "7896009866944"}, {"name": "ARROZ PURO GRÃO BCO T1 5KG", "barCode": "7897297900112"}, {"name": "ARROZ SABOROSO CAAL T1 5KG", "barCode": "7898295150189"}, {"name": "ARROZ ALEGRE T1 5KG", "barCode": "7898295155207"}, {"name": "ARROZ RAMPINELLI BCO LF 5KG", "barCode": "7896546112252"}, {"name": "ARROZ RAMPINELLI PARB 5KG", "barCode": "7896546110050"}, {"name": "ARROZ DONO DA CASA T1 5KG", "barCode": "7896641000317"}, {"name": "ARROZ SEPE BCO T1 1KG", "barCode": "7896009863547"}, {"name": "ARROZ SEPE T1 2KG", "barCode": "7896009863752"}, {"name": "ARROZ SEPE PARB T1 1KG", "barCode": "7896009866050"}, {"name": "ARROZ RAMPINELLI BCO T1 1KG", "barCode": "7896546112214"}, {"name": "ARROZ RAMPINELLI PARB T1 1KG", "barCode": "7896546110012"}, {"name": "ARROZ CALAFATE T1 1KG", "barCode": "7896010355062"}, {"name": "FEIJÃO PRETO COMBRASIL 1KG", "barCode": "7896101062015"}, {"name": "FEIJÃO PRETO ANA PLUS T1 1KG", "barCode": "7898063330072"}, {"name": "FEIJÃO PRETO RIO DOCE 1KG", "barCode": "7897095900758"}, {"name": "FEIJÃO PRETO JUJU T1 1KG", "barCode": "7896517400036"}, {"name": "FEIJÃO PRETO NORTE T1 1KG", "barCode": "7898052521160"}, {"name": "FEIJÃO PRETO NICO T1 1KG", "barCode": "7897769200108"}, {"name": "FEIJÃO PRETO LÍVIA T1 1KG", "barCode": "7897769200320"}, {"name": "FEIJÃO CARIOCA COMBRASIL 1KG", "barCode": "7896101062022"}, {"name": "FEIJÃO CARIOCA ANA PLUS T1 1KG", "barCode": "7898063330041"}, {"name": "FEIJÃO CARIOCA JUJU T1 1KG", "barCode": "7896517400302"}, {"name": "FEIJÃO CARIOCA NORTE T1 1KG", "barCode": "7898052521016"}, {"name": "FEIJÃO CARIOCA NICO T1 1KG", "barCode": "7897769200184"}, {"name": "FEIJÃO CARIOCA LÍVIA T1 1KG", "barCode": "7897769200290"}, {"name": "AÇÚCAR CRISTAL ALCON 5KG", "barCode": "7898996103330"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 5KG", "barCode": "7898187830052"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 5KG", "barCode": "7896894900082"}, {"name": "AÇÚCAR CRISTAL COAGRO 5KG", "barCode": "7898903106010"}, {"name": "AÇÚCAR CRISTAL ALCON 2KG", "barCode": "7898996103323"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 2KG", "barCode": "7898187830021"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 2KG", "barCode": "7896894900075"}, {"name": "AÇÚCAR CRISTAL COAGRO 2KG", "barCode": "7898903106027"}, {"name": "ÓLEO DE SOJA LIZA PET 900ML", "barCode": "7896036090244"}, {"name": "ÓLEO DE SOJA ABC PET 900ML", "barCode": "7896242200048"}, {"name": "ÓLEO DE SOJA SOYA PET 900ML", "barCode": "7891080801204"}, {"name": "ÓLEO DE SOJA COAMO PET 900ML", "barCode": "7896279600538"}, {"name": "ÓLEO DE SOJA VITALIV PET 900ML", "barCode": "7898247780297"}, {"name": "LEITE LONGA VIDA INT CAPEL 1L", "barCode": "7898360430215"}, {"name": "LEITE LONGA VIDA INT DAMARE 1L", "barCode": "7898945133203"}, {"name": "LEITE LONGA VIDA INT ITALAC 1L", "barCode": "7898080640611"}, {"name": "LEITE LONGA VIDA INT PIRACANJUBA 1L", "barCode": "7898215151708"}, {"name": "LEITE LONGA VIDA INT PORTO ALEGRE 1L", "barCode": "7896122305207"}, {"name": "LEITE LONGA VIDA INT SELITA 1L", "barCode": "7896484411509"}, {"name": "CAFÉ 3 CORAÇÕES ALMOF 250G EXTRA FORTE", "barCode": "7896005801512"}, {"name": "CAFÉ FORT POUCH 250G TORRADO E MOÍDO", "barCode": "7896005800539"}, {"name": "CAFÉ NÚMERO UM ALMOF 250G TRADICIONAL", "barCode": "7896212700011"}, {"name": "CAFÉ CAFUSO ALMOF 250G TRADICIONAL", "barCode": "7896298600113"}, {"name": "CAFÉ PILÃO VACUO PURO 250G TRADICIONAL", "barCode": "7896089012637"}, {"name": "CAFÉ MERIDIANO ALMOF 250G EXTRA FORTE", "barCode": "7896246700162"}, {"name": "CAFÉ MERIDIANO ALMOF 250G TRADICIONAL", "barCode": "7896246700025"}, {"name": "CAFÉ GRÃO DA ROÇA ALMOF 250G TRADICIONAL", "barCode": "7898287600029"}, {"name": "CAFÉ GLÓRIA ALMOF 250G EXTRA FORTE", "barCode": "7898908355192"}, {"name": "CAFÉ DAMARE ALMOF 250G TRADICIONAL", "barCode": "7898945133012"}, {"name": "CAFÉ MELITTA POUCH 250G TRADICIONAL", "barCode": "7891021006088"}, {"name": "FARINHA TRIGO ADRIA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO ESP PALOMA 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM 5KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM FERM 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM POLI 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA 5KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA INTEGRAL 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA SEMOLADA 25KG", "barCode": ""}, {"name": "FARINHA TRIGO TRES COROAS T1 1KG", "barCode": ""}, {"name": "LEITE LV INT BH 1L", "barCode": ""}, {"name": "ARROZ CATARINAO BCO T1 5KG", "barCode": ""}, {"name": "ARROZ DONA MILU T1 5KG", "barCode": ""}, {"name": "ARROZ PURO GRAO BCO T1 1KG", "barCode": ""}, {"name": "ARROZ SEPE PREMIUM T1 1KG", "barCode": ""}, {"name": "OLEO SOJA ABC PET 900ML", "barCode": ""}];
+const KEY = "dscanner-web-v1";
+
+/* ---------- ícones ---------- */
+const IC = {
+  barcode:'<svg class="i" viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>',
+  edit:'<svg class="i" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+  del:'<svg class="i" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+  sweep:'<svg class="i" viewBox="0 0 24 24"><path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>',
+  back:'<svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>',
+  dl:'<svg class="i" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>',
+  share:'<svg class="i" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-5.91.7L8.04 9.81A2.99 2.99 0 0 0 3 12a3 3 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 1 0 2.92-2.92z"/></svg>',
+  camera:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>',
+  chev:'<svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M7 10l5 5 5-5z"/></svg>'
+};
+
+/* ---------- armazenamento ---------- */
+let memoryStore = null;
+function load(){
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch(e) { raw = memoryStore; }
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  let id = 1;
+  return {
+    nextId: DEFAULT_PRODUCTS.length + 1,
+    products: DEFAULT_PRODUCTS.map(p => ({ id: id++, name: p.name, barCode: p.barCode })),
+    competitors: [],           // {id, name}
+    prices: [],                // {id, competitorId, productId, name, barCode, price}
+    selectedCompetitorId: null
+  };
+}
+function save(){
+  const raw = JSON.stringify(S);
+  try { localStorage.setItem(KEY, raw); } catch(e) { memoryStore = raw; }
+}
+let S = load();
+const newId = () => S.nextId++;
+
+/* ---------- utilidades ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = v => "R$ " + Number(v).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const byName = (a,b) => a.name.localeCompare(b.name, "pt-BR");
+function toast(msg){
+  document.querySelectorAll(".toast").forEach(x => x.remove());
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2800);
+}
+function priceFor(competitorId, product){
+  return S.prices.find(p => p.competitorId === competitorId &&
+    (p.productId === product.id || (p.productId == null && p.name === product.name)));
+}
+const pricesOf = cid => S.prices.filter(p => p.competitorId === cid).sort(byName);
+
+/* ---------- EAN-13 (mesma lógica do app) ---------- */
+function ean13Check(d12){
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += (+d12[i]) * (i % 2 ? 3 : 1);
+  return String((10 - sum % 10) % 10);
+}
+function sanitizeEAN13(code){
+  if (!/^\d{13}$/.test(code)) return null;
+  return code.slice(0,12) + ean13Check(code.slice(0,12));
+}
+function ean13SVG(code){
+  const L = ["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+  const G = ["0100111","0110011","0011011","0100001","0011101","0111001","0000101","0010001","0001001","0010111"];
+  const R = L.map(p => p.replace(/./g, b => b === "0" ? "1" : "0"));
+  const PAR = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
+  const par = PAR[+code[0]];
+  let bits = "101";
+  for (let i = 1; i <= 6; i++) bits += (par[i-1] === "L" ? L : G)[+code[i]];
+  bits += "01010";
+  for (let i = 7; i <= 12; i++) bits += R[+code[i]];
+  bits += "101";
+  const m = 3, q = 11 * m, h = 70, guardH = 78, W = bits.length * m + 2 * q;
+  const guards = new Set([0,1,2,45,46,47,48,49,92,93,94]);
+  let rects = "";
+  for (let i = 0; i < bits.length; i++) if (bits[i] === "1")
+    rects += `<rect x="${q + i*m}" y="4" width="${m}" height="${guards.has(i) ? guardH : h}"/>`;
+  const t = (x, s) => `<text x="${x}" y="96" font-family="monospace" font-size="16" text-anchor="middle">${s}</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 102">${rects}` +
+    t(q - 10, code[0]) + t(q + 24*m, code.slice(1,7)) + t(q + 71*m, code.slice(7)) + `</svg>`;
+}
+
+/* ---------- gerador de .xlsx (sem bibliotecas) ---------- */
+const CRC = (() => { const t = []; for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [name, text] of files){
+    const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(8,0,true);
+    h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer), nb, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true);
+    c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true);
+    c.setUint16(28,nb.length,true); c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer), nb);
+    off += 30 + nb.length + data.length;
+  }
+  const csize = central.reduce((s,a) => s + a.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true);
+  e.setUint32(12,csize,true); e.setUint32(16,off,true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)],
+    {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function colName(i){ let s = ""; i++; while (i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function xesc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""); }
+/* rows: array de arrays; números viram células numéricas com formato R$ */
+function makeXlsx(sheetName, rows, widths){
+  const sd = rows.map((r, ri) => `<row r="${ri+1}">` + r.map((v, ci) => {
+    const ref = colName(ci) + (ri + 1);
+    if (v === null || v === undefined || v === "") return "";
+    if (typeof v === "number") return `<c r="${ref}" s="2"><v>${v}</v></c>`;
+    return `<c r="${ref}" t="inlineStr"${ri === 0 ? ' s="1"' : ""}><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
+  }).join("") + `</row>`).join("");
+  const cols = `<cols>` + widths.map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("") + `</cols>`;
+  const NS = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+  const RNS = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  return zip([
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook ${NS} ${RNS}><sheets><sheet name="${xesc(sheetName.slice(0,31))}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet ${NS}><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot;\\ #,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+    ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet ${NS}><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData></worksheet>`]
+  ]);
+}
+function xlsxAll(){
+  const comps = [...S.competitors].sort(byName);
+  const names = [...new Set(S.prices.map(p => p.name))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const cols = [];   // cada concorrente: varejo (+ atacado, se tiver)
+  for (const c of comps) {
+    cols.push({ c, k: "price", title: c.name });
+    if (S.prices.some(p => p.competitorId === c.id && p.price2)) cols.push({ c, k: "price2", title: c.name + " (preço 2)" });
+  }
+  const rows = [["Produto", ...cols.map(x => x.title)]];
+  for (const n of names) rows.push([n, ...cols.map(x => { const p = S.prices.find(y => y.competitorId === x.c.id && y.name === n); return p && p[x.k] ? p[x.k] : ""; })]);
+  return makeXlsx("Pesquisa de Preços", rows, [55, ...cols.map(() => 18)]);
+}
+function xlsxOne(c){
+  const items = pricesOf(c.id), hasA = items.some(p => p.price2);
+  const rows = [["Nome", "Código de Barras", "Preço 1", ...(hasA ? ["Preço 2"] : [])],
+    ...items.map(p => [p.name, p.barCode, p.price, ...(hasA ? [p.price2 || ""] : [])])];
+  return makeXlsx("Produtos", rows, [55, 20, 14, 14]);
+}
+
+/* ---------- salvar / compartilhar arquivo ---------- */
+let downloadsCap;   // undefined = não verificado, null = indisponível
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("downloads").then(d => { downloadsCap = d; }).catch(() => { downloadsCap = null; });
+}
+async function saveFile(blob, filename){
+  if (downloadsCap) {
+    try { await downloadsCap.save({ filename, data: blob }); return; }
+    catch(e) {
+      try { await downloadsCap.save({ filename, data: new Uint8Array(await blob.arrayBuffer()) }); return; }
+      catch(e2) { toast("Download cancelado ou não permitido."); return; }
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Arquivo salvo: " + filename);
+}
+function canShareFiles(){
+  try { return !!(navigator.canShare && navigator.canShare({ files: [new File([""], "t.xlsx", {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})] })); }
+  catch(e) { return false; }
+}
+async function shareFile(blob, filename){
+  try { await navigator.share({ files: [new File([blob], filename, {type: blob.type})], title: filename }); }
+  catch(e) { if (e && e.name !== "AbortError") { toast("Não deu para compartilhar. Salvando o arquivo…"); saveFile(blob, filename); } }
+}
+const safeName = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9_]/g, "_");
+
+/* ---------- fotos (IndexedDB: guarda só a última foto de cada item em cada concorrente) ---------- */
+const PhotoDB = (() => {
+  let dbp = null;
+  function db(){
+    if (!dbp) dbp = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open("dscanner-fotos", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("fotos");
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      } catch(e) { rej(e); }
+    });
+    return dbp;
+  }
+  async function run(mode, fn){
+    const d = await db();
+    return new Promise((res, rej) => {
+      const t = d.transaction("fotos", mode); const req = fn(t.objectStore("fotos"));
+      t.oncomplete = () => res(req ? req.result : undefined); t.onerror = () => rej(t.error);
+    });
+  }
+  return {
+    put: (k, blob) => run("readwrite", s => s.put(blob, k)),
+    get: k => run("readonly", s => s.get(k)),
+    del: k => run("readwrite", s => s.delete(k)).catch(() => {}),
+  };
+})();
+const photoKey = (cid, pid) => cid + ":" + pid;
+if (!S.photos) S.photos = {};      // chave -> data/hora da foto
+if (!S.aliases) S.aliases = [];    // vínculos por código de barras (ajuda extra)
+if (!S.links) S.links = [];        // vínculos pela descrição da etiqueta -> meu item
+S.aliases = S.aliases.filter(a => a.ean);
+const urlCache = new Map();
+async function photoURL(key){
+  const stamp = S.photos[key]; if (!stamp) return null;
+  const c = urlCache.get(key); if (c && c.stamp === stamp) return c.url;
+  try {
+    const blob = await PhotoDB.get(key); if (!blob) return null;
+    if (c) URL.revokeObjectURL(c.url);
+    const url = URL.createObjectURL(blob); urlCache.set(key, { stamp, url }); return url;
+  } catch(e) { return null; }
+}
+function fillThumbs(root){
+  root.querySelectorAll("img[data-photo]").forEach(async img => {
+    const u = await photoURL(img.dataset.photo); if (u) img.src = u; else img.closest(".thumb")?.remove();
+  });
+}
+function removePhoto(cid, pid){
+  const k = photoKey(cid, pid);
+  if (S.photos[k]) { delete S.photos[k]; PhotoDB.del(k); }
+}
+function removeCompetitorPhotos(cid){
+  Object.keys(S.photos).filter(k => k.startsWith(cid + ":")).forEach(k => { delete S.photos[k]; PhotoDB.del(k); });
+}
+function photoViewer(key, title){
+  modal(`<h2 style="font-size:16px">${esc(title)}</h2><img class="big-photo" data-photo="${key}" alt="">
+    <div class="foot"><button class="btn btn-orange" data-x>Fechar</button></div>`,
+    m => { m.querySelector("[data-x]").onclick = close; fillThumbs(m); });
+}
+
+/* ---------- imagem ---------- */
+async function fileToImage(file){
+  const url = URL.createObjectURL(file); const img = new Image();
+  await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = url; });
+  return { img, url };
+}
+function imageToCanvas(img, max, gray, upscale){
+  const s = upscale ? max / Math.max(img.naturalWidth, img.naturalHeight) : Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, c.width, c.height);
+  if (gray) {
+    const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) {
+      let v = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+      v = Math.max(0, Math.min(255, (v - 128) * 1.4 + 128));   // mais contraste
+      a[i] = a[i+1] = a[i+2] = v;
+    }
+    g.putImageData(d, 0, 0);
+  }
+  return c;
+}
+/* inverte só as áreas escuras da etiqueta (preço branco em fundo preto vira preto em fundo branco) */
+function darkInverted(src){
+  const c = imageToCanvas(src, 1000, false, true), W = c.width, H = c.height;
+  const g = c.getContext("2d"), d = g.getImageData(0, 0, W, H), a = d.data;
+  const gray = new Float32Array(W * H);
+  for (let i = 0, j = 0; j < gray.length; i += 4, j++) gray[j] = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+  const I = new Float64Array((W + 1) * (H + 1));
+  for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { row += gray[y*W + x]; I[(y+1)*(W+1) + x+1] = I[y*(W+1) + x+1] + row; } }
+  const r = Math.round(W * 0.08);
+  let mask = new Uint8Array(W * H), dark = 0;
+  for (let y = 0; y < H; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(H, y + r + 1);
+    for (let x = 0; x < W; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(W, x + r + 1);
+      const s = I[y1*(W+1) + x1] - I[y0*(W+1) + x1] - I[y1*(W+1) + x0] + I[y0*(W+1) + x0];
+      if (s / ((x1 - x0) * (y1 - y0)) < 100) { mask[y*W + x] = 1; dark++; }
+    }
+  }
+  if (dark < W * H * 0.03) return null;   // não tem área escura
+  const k = 4, tmp = new Uint8Array(W * H);   // alarga a máscara um pouco
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let m = 0; for (let dx = -k; dx <= k && !m; dx++) { const xx = x + dx; if (xx >= 0 && xx < W && mask[y*W + xx]) m = 1; } tmp[y*W + x] = m; }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let m = 0; for (let dy = -k; dy <= k && !m; dy++) { const yy = y + dy; if (yy >= 0 && yy < H && tmp[yy*W + x]) m = 1; } mask[y*W + x] = m; }
+  for (let j = 0, i = 0; j < gray.length; j++, i += 4) {
+    let v = mask[j] ? 255 - gray[j] : gray[j];
+    v = Math.max(0, Math.min(255, (v - 128) * 1.4 + 128));
+    a[i] = a[i+1] = a[i+2] = v;
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+const canvasToBlob = (c, q) => new Promise(r => c.toBlob(r, "image/jpeg", q));
+
+/* ---------- leitura de texto (OCR) no próprio navegador ---------- */
+let ocrWorkerP = null, ocrLogger = null;
+function loadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+}
+function getOCR(){
+  if (!ocrWorkerP) {
+    ocrWorkerP = (async () => {
+      if (!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
+      const w = await Tesseract.createWorker("por", 1, { logger: m => ocrLogger && ocrLogger(m) });
+      return w;
+    })();
+    ocrWorkerP.catch(() => { ocrWorkerP = null; });
+  }
+  return ocrWorkerP;
+}
+function warmOCR(){ if (navigator.onLine !== false) setTimeout(() => getOCR().catch(() => {}), 1500); }
+
+/* Acha os valores grandes da etiqueta (os preços) */
+function findPrices(words, text){
+  const W = (words || []).map(w => ({ t: String(w.text || "").trim(), b: w.bbox || {x0:0,y0:0,x1:0,y1:0} }))
+    .map(w => ({ ...w, h: w.b.y1 - w.b.y0, cx: (w.b.x0 + w.b.x1) / 2, cy: (w.b.y0 + w.b.y1) / 2 }));
+  const fix = s => s.replace(/[Oo]/g, "0").replace(/[Il|]/g, "1").replace(/[Ss](?=\d)/g, "5");
+  const cands = [];
+  W.forEach((w, i) => {
+    const t = fix(w.t);
+    let m = t.match(/(\d{1,4})[,.](\d{2})(?!\d)/);
+    if (m) { cands.push({ v: +(m[1] + "." + m[2]), h: w.h, cx: w.cx, cy: w.cy, y0: w.b.y0 }); return; }
+    // centavos separados/pequenos: "21" "90" ou "21" ",90"
+    m = t.match(/^(?:R\$)?(\d{1,4})[,.]?$/);
+    if (m) {
+      const n = W[i+1]; if (!n) return;
+      const nm = fix(n.t).match(/^[,.]?(\d{2})$/);
+      const sameLine = n.b.y0 < w.b.y1 && n.b.x0 >= w.b.x1 - 4 && n.b.x0 - w.b.x1 < w.h * 1.5;
+      if (nm && sameLine) cands.push({ v: +(m[1] + "." + nm[1]), h: w.h, cx: w.cx, cy: w.cy, y0: w.b.y0 });
+    }
+  });
+  let ok = cands.filter(c => c.v >= 0.1 && c.v < 10000);
+  if (!ok.length) {
+    const all = [...fix(text || "").matchAll(/(\d{1,4})\s?[,.]\s?(\d{2})(?!\d)/g)].map(m => +(m[1] + "." + m[2])).filter(v => v >= 0.1);
+    return { vals: all };
+  }
+  // só os números grandes (os preços); descarta "média litro", "trib", "cxa"
+  const maxH = Math.max(...ok.map(c => c.h));
+  return { vals: [...new Set(ok.filter(c => c.h >= maxH * 0.6).map(c => c.v))] };
+}
+/* junta as leituras e escolhe o MENOR preço (descarta números que não parecem preço da mesma etiqueta) */
+function lowestPrice(lists){
+  const all = lists.flat().filter(v => v > 0);
+  if (!all.length) return null;
+  const mx = Math.max(...all);
+  return Math.min(...all.filter(v => v >= mx * 0.5));
+}
+
+/* Código de barras: leitor do navegador (Chrome/Android) ou números lidos na etiqueta */
+function validEAN(s){ return /^\d{13}$/.test(s) && ean13Check(s.slice(0, 12)) === s[12] || /^\d{8}$/.test(s); }
+async function readBarcode(file){
+  try {
+    if (!("BarcodeDetector" in window)) return null;
+    const fmts = await BarcodeDetector.getSupportedFormats();
+    const want = ["ean_13", "ean_8", "upc_a"].filter(f => fmts.includes(f)); if (!want.length) return null;
+    const bmp = await createImageBitmap(file);
+    const r = await new BarcodeDetector({ formats: want }).detect(bmp);
+    const hit = r.find(x => validEAN(x.rawValue) || /^\d{12}$/.test(x.rawValue));
+    if (!hit) return null;
+    const code = hit.rawValue.length === 12 ? "0" + hit.rawValue : hit.rawValue;
+    return { code, box: hit.boundingBox, w: bmp.width, h: bmp.height };
+  } catch(e) { return null; }
+}
+function eanFromText(text){
+  const m = (text || "").replace(/(\d)\s(?=\d)/g, "$1").match(/\d{13}|\d{8}/g) || [];
+  return m.find(validEAN) || null;
+}
+
+/* Acha o produto da minha lista que mais combina com o texto da etiqueta */
+const STOP = new Set(["de","da","do","das","dos","com","e","em","para","un","und","pct","cx","rs","r","preco","oferta","kg","g","ml","l","lt","por","t1","tp1","tipo"]);
+function tokens(s){
+  return norm(s).replace(/(\d+)[.,]?(\d*)\s*(kg|g|gr|ml|l|lt|lts)\b/g, (_, a, b, u) => a + (b ? "." + b : "") + ({gr:"g",lt:"l",lts:"l"}[u] || u))
+    .split(/[^a-z0-9.]+/).map(t => t.replace(/^\.+|\.+$/g, "")).filter(t => t.length >= 2 && !STOP.has(t));
+}
+const isSize = t => /^\d+(\.\d+)?(kg|g|ml|l)$/.test(t);
+function tokScore(pt, tagSet){
+  if (tagSet.has(pt)) return 1;
+  if (isSize(pt)) return 0;
+  for (const t of tagSet) {
+    if (t.length >= 3 && pt.startsWith(t)) return 0.75;   // abreviação na etiqueta: "arr" = "arroz"
+    if (pt.length >= 3 && t.startsWith(pt)) return 0.9;    // abreviação no meu cadastro: "parb" = "parboilizado"
+    if (pt.length >= 5 && t.length >= 5 && lev(pt, t) <= 1) return 0.85;   // erro de leitura
+  }
+  return 0;
+}
+function lev(a, b){
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const d = Array.from({length: a.length + 1}, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function matchProducts(text, cid, ean){
+  const tagToks = tokens(text), tagSet = new Set(tagToks);
+  const digits = (text.match(/\d{8,14}/g) || []); if (ean) digits.push(ean);
+  // 1º: código de barras já vinculado (vale para todos os concorrentes)
+  if (ean) {
+    const al = [...S.aliases].reverse().find(a => a.ean === ean);
+    const p = al && S.products.find(x => x.id === al.productId);
+    if (p) return [{ p, s: 1000, linked: true }];
+  }
+  const scores = new Map();
+  for (const p of S.products) {
+    let s = 0;
+    if (p.barCode && digits.includes(p.barCode)) s = 100;
+    else {
+      const pt = tokens(p.name); if (!pt.length) continue;
+      let got = 0, w = 0, hits = 0;
+      for (const t of pt) { const k = isSize(t) ? 2 : 1; w += k; const sc = tokScore(t, tagSet); got += k * sc; if (sc > 0) hits++; }
+      s = got / w + 0.05 * hits;   // mais palavras em comum = desempate
+      const sizes = pt.filter(isSize);
+      if (sizes.length && sizes.some(z => !tagSet.has(z)) && tagToks.some(isSize)) s *= 0.6;   // tamanho diferente
+    }
+    scores.set(p.id, s);
+  }
+  return [...scores.entries()].filter(([, s]) => s > 0.25).sort((a, b) => b[1] - a[1]).map(([id, s]) => ({ p: S.products.find(x => x.id === id), s }));
+}
+/* ---------- vínculo pela DESCRIÇÃO da etiqueta ---------- */
+// palavras que aparecem em toda etiqueta e não dizem qual é o produto
+const GENERIC = new Set("preco precos unidade unidades partir varejo atacado media litro litros trib cxa und uni oferta ref promocao valido ate por com para quilo cada leve pague".split(" "));
+const GEN = [...GENERIC];
+function grams(t){ const s = " " + t + " "; const g = new Set(); for (let i = 0; i < s.length - 2; i++) g.add(s.slice(i, i + 3)); return g; }
+function wsim(a, b){   // parecença entre palavras (aguenta erros de leitura)
+  if (a === b) return 1;
+  const A = grams(a), B = grams(b); let n = 0; for (const x of A) if (B.has(x)) n++;
+  return 2 * n / (A.size + B.size);
+}
+function descTokens(text){
+  return [...new Set(norm(text || "").replace(/[^a-z\s]/g, " ").split(/\s+/)
+    .filter(t => t.length >= 3 && !GENERIC.has(t) && !GEN.some(g => g.length >= 5 && wsim(t, g) >= 0.5)))].slice(0, 60);
+}
+function sampleScore(newToks, toks, df, N){
+  let tot = 0, got = 0;
+  for (const t of toks) {
+    const w = Math.log((N + 1) / ((df.get(t) || 0) + 0.5));   // palavra comum em várias etiquetas vale menos
+    if (w <= 0) continue;
+    let best = 0; for (const u of newToks) { const s = wsim(t, u); if (s > best) best = s; }
+    tot += w; got += w * (best >= 0.45 ? best : 0);
+  }
+  return tot ? got / tot : 0;
+}
+function linkMatch(text, cid){
+  const L = S.links.filter(l => l.cid === cid); if (!L.length) return [];
+  const q = descTokens(text); if (!q.length) return [];
+  const df = new Map(); for (const l of L) for (const t of l.toks) df.set(t, (df.get(t) || 0) + 1);
+  const best = new Map();
+  for (const l of L) { const s = sampleScore(q, l.toks, df, L.length); if (s > (best.get(l.pid) || 0)) best.set(l.pid, s); }
+  return [...best.entries()].map(([pid, s]) => ({ p: S.products.find(x => x.id === pid), s })).filter(r => r.p).sort((a, b) => b.s - a.s);
+}
+function rememberLink(cid, text, pid){
+  const toks = descTokens(text); if (!toks.length) return;
+  // tira vínculos de OUTROS itens com etiqueta quase igual (foi um vínculo errado corrigido)
+  S.links = S.links.filter(l => !(l.cid === cid && l.pid !== pid && sampleScore(toks, l.toks, new Map(), 1) >= 0.6));
+  S.links.push({ cid, pid, toks, at: Date.now() });
+  const mine = S.links.filter(l => l.cid === cid && l.pid === pid);
+  if (mine.length > 4) { const old = mine[0]; S.links = S.links.filter(l => l !== old); }   // guarda as 4 últimas fotos
+  if (S.links.length > 5000) S.links.splice(0, S.links.length - 5000);
+}
+function rememberAlias(cid, text, productId, ean){
+  if (!ean) return;
+  S.aliases = S.aliases.filter(a => a.ean !== ean);
+  S.aliases.push({ cid, ean, toks: [], productId });
+}
+
+/* ---------- salvar preço (sempre fica o último) ---------- */
+function setPrice(cid, prod, price){
+  const ex = priceFor(cid, prod);
+  const at = null;
+  if (ex) { ex.price = price; ex.price2 = at; ex.updatedAt = Date.now(); ex.productId = prod.id; }
+  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price, price2: at, updatedAt: Date.now() });
+}
+
+/* ---------- modais ---------- */
+const layer = document.getElementById("layer");
+function modal(html, onMount){
+  layer.innerHTML = `<div class="scrim"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  const scrim = layer.firstChild;
+  scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
+  onMount && onMount(scrim.querySelector(".modal"));
+  const first = scrim.querySelector("input,select"); first && setTimeout(() => first.focus(), 30);
+}
+function close(){ layer.innerHTML = ""; }
+document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+
+function confirmBox(title, text, okLabel, onOk){
+  modal(`<h2>${esc(title)}</h2><p class="sub">${esc(text)}</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-red" data-ok>${esc(okLabel)}</button></div>`,
+    m => { m.querySelector("[data-x]").onclick = close; m.querySelector("[data-ok]").onclick = () => { close(); onOk(); }; });
+}
+
+/* Preço: igual ao app – digite só números, os 2 últimos são centavos */
+function bindPriceInput(inp, initialCents, onEnter){
+  let digits = initialCents > 0 ? String(initialCents) : "";
+  const fmt = () => brl((parseInt(digits || "0", 10)) / 100);
+  const put = () => { inp.value = fmt(); const L = inp.value.length; try { inp.setSelectionRange(L, L); } catch(e) {} };
+  inp.value = fmt();
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); onEnter && onEnter(); return; }
+    if (e.key === "Backspace") { e.preventDefault(); digits = digits.slice(0, -1); put(); return; }
+    if (/^\d$/.test(e.key)) { e.preventDefault(); if (digits.length < 9) digits = (digits + e.key).replace(/^0+/, ""); put(); return; }
+  });
+  inp.addEventListener("input", () => { digits = inp.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 9); put(); });
+  inp.addEventListener("focus", () => setTimeout(put, 0));
+  return {
+    value: () => parseInt(digits || "0", 10) / 100,
+    set: v => { digits = v > 0 ? String(Math.round(v * 100)) : ""; inp.value = fmt(); }
+  };
+}
+function priceDialog(title, initial, onSave){
+  modal(`<h2>${esc(title)}</h2>
+    <div class="field"><label>Preço (o menor da etiqueta)</label><input inputmode="numeric" autocomplete="off" data-p></div>
+    <p class="hint">Digite só os números. Ex.: 1 1 3 9 = R$ 11,39</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange" data-ok>Salvar</button></div>`,
+  m => {
+    const ok = () => { if (!(pi.value() > 0)) { toast("Informe o preço"); return; } close(); onSave(pi.value()); };
+    const pi = bindPriceInput(m.querySelector("[data-p]"), Math.round((initial?.price || 0) * 100), ok);
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-ok]").onclick = ok;
+  });
+}
+
+/* ---------- câmera ---------- */
+const cam = document.getElementById("cam");
+let camTarget = null;   // produto fixo (foto tirada no card) ou null (foto geral)
+function openCamera(product){
+  if (!S.selectedCompetitorId) { toast("Selecione ou crie o concorrente primeiro"); newCompetitorDialog(); return; }
+  camTarget = product || null; cam.value = ""; cam.click();
+}
+cam.addEventListener("change", () => { const f = cam.files[0]; if (f) photoDialog(f, camTarget); });
+
+/* recorta a região da etiqueta em volta do código de barras (foto de longe) */
+function cropAround(img, bc){
+  const b = bc.box, sx = img.naturalWidth / bc.w, sy = img.naturalHeight / bc.h;
+  const w = b.width * sx, x0 = b.x * sx, y0 = b.y * sy, x1 = x0 + w, y1 = (b.y + b.height) * sy;
+  if (w > img.naturalWidth * 0.3) return null;   // a foto já é de perto
+  const L = Math.max(0, x0 - 0.8 * w), T = Math.max(0, y0 - 1.8 * w);
+  const R = Math.min(img.naturalWidth, x1 + 1.8 * w), B = Math.min(img.naturalHeight, y1 + 0.3 * w);
+  const c = document.createElement("canvas"); c.width = R - L; c.height = B - T;
+  c.getContext("2d").drawImage(img, L, T, R - L, B - T, 0, 0, R - L, B - T);
+  const i2 = new Image(); i2.src = c.toDataURL("image/png");
+  return new Promise(r => { i2.onload = () => r(i2); i2.onerror = () => r(null); });
+}
+
+/* Lê a etiqueta: código de barras (se tiver) + duas leituras de texto. Devolve texto, menor preço e código */
+async function analyzeTag(file, img, onStatus){
+  const bc = await readBarcode(file);
+  onStatus("prep");
+  const worker = await getOCR();
+  const src = (bc && await cropAround(img, bc)) || img;
+  onStatus(1);
+  await worker.setParameters({ tessedit_pageseg_mode: "11" });
+  const A = (await worker.recognize(imageToCanvas(src, 1000, true, true))).data;
+  let B = null; const inv = darkInverted(src);
+  if (inv) {   // 2ª leitura: área escura invertida (pega preço branco em fundo preto)
+    onStatus(2);
+    await worker.setParameters({ tessedit_pageseg_mode: "6" });
+    B = (await worker.recognize(inv)).data;
+  }
+  const text = (A.text || "") + "\n" + (B ? B.text || "" : "");
+  const va = findPrices(A.words, A.text).vals, vb = B ? findPrices(B.words, B.text).vals : [];
+  const price = lowestPrice([va, vb]);
+  // área escura sem preço lido = pode haver um preço menor que o leitor não pegou
+  const darkUnread = !!inv && !vb.some(v => price && v <= price);
+  return { text, price, darkUnread, ean: (bc && bc.code) || eanFromText(text) };
+}
+
+/* Foto da etiqueta.
+   - Item reconhecido pelo vínculo + preço lido  => salva sozinho e mostra o resultado (com Corrigir).
+   - Senão => você confere/escolhe o item e salva (isso cria o vínculo para as próximas vezes). */
+async function photoDialog(file, fixedProduct){
+  const cid = S.selectedCompetitorId;
+  const comp = S.competitors.find(c => c.id === cid);
+  let loaded;
+  try { loaded = await fileToImage(file); } catch(e) { toast("Não consegui abrir a foto"); return; }
+  const ctx = { cid, comp, file, loaded, fixedProduct, chosen: fixedProduct || null, text: "", ean: null, price: null, ranked: [], cancelled: false };
+
+  modal(`<h2>${fixedProduct ? esc(fixedProduct.name) : "Foto da etiqueta"}</h2>
+    <p class="sub" style="margin:-8px 0 12px">Concorrente: <b style="color:var(--text)">${esc(comp.name)}</b></p>
+    <img class="big-photo" style="max-height:30vh" src="${loaded.url}" alt="Foto da etiqueta">
+    <div class="status" data-st><span class="spin"></span> Lendo etiqueta…</div>
+    <div class="foot sticky"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-white" data-man>Digitar o preço</button></div>`,
+  m => {
+    const st = m.querySelector("[data-st]");
+    m.querySelector("[data-x]").onclick = () => { ctx.cancelled = true; URL.revokeObjectURL(loaded.url); close(); };
+    m.querySelector("[data-man]").onclick = () => { ctx.cancelled = true; confirmScreen(ctx, "Digite o preço."); };
+    ocrLogger = msg => {
+      if (ctx.cancelled) return;
+      if (msg.status === "recognizing text") st.innerHTML = `<span class="spin"></span> ${ctx.pass === 2 ? "Conferindo preço" : "Lendo etiqueta"}… ${Math.round(msg.progress * 100)}%`;
+      else if (/load|initializ/.test(msg.status)) st.innerHTML = `<span class="spin"></span> Preparando leitor (só demora na 1ª vez)…`;
+    };
+    (async () => {
+      try {
+        const r = await analyzeTag(file, loaded.img, s => { ctx.pass = s; });
+        if (ctx.cancelled) return;
+        Object.assign(ctx, r);
+      } catch(e) {
+        if (ctx.cancelled) return;
+        ctx.ocrFailed = true;
+      }
+      if (ctx.cancelled) return;
+      ctx.cancelled = true;   // daqui em diante a tela é trocada
+      // quem é o item?
+      let sure = false;
+      if (!fixedProduct) {
+        const byEan = ctx.ean && [...S.aliases].reverse().find(a => a.ean === ctx.ean);
+        const byEanP = byEan && S.products.find(p => p.id === byEan.productId) || (ctx.ean && S.products.find(p => p.barCode === ctx.ean));
+        const L = linkMatch(ctx.text, cid);
+        if (byEanP) { ctx.chosen = byEanP; sure = true; }
+        else if (L.length && L[0].s >= 0.30 && L[0].s >= 1.8 * (L[1]?.s || 0)) { ctx.chosen = L[0].p; sure = true; }
+        else if (L.length && L[0].s >= 0.15) ctx.chosen = L[0].p;
+        const byName = matchProducts(ctx.text, cid, null);
+        ctx.ranked = [...L.filter(x => x.s >= 0.12), ...byName.filter(x => !L.some(y => y.p === x.p))];
+        if (!ctx.chosen && byName.length && byName[0].s >= 0.5) ctx.chosen = byName[0].p;
+      }
+      if (!fixedProduct && sure && ctx.price && !ctx.darkUnread) return autoSave(ctx);
+      const msg = ctx.ocrFailed ? (navigator.onLine === false ? "Sem internet para o leitor automático. Digite o preço." : "Leitor automático indisponível. Digite o preço.")
+        : !ctx.price ? "Não consegui ler o preço. Digite o valor."
+        : ctx.darkUnread ? `Li ${brl(ctx.price)}, mas pode ter um preço MENOR na parte escura da etiqueta. Confira.`
+        : fixedProduct ? "Confira o preço e salve. A etiqueta fica vinculada a este item."
+        : ctx.chosen ? "Confira o item e o preço. Ao salvar, a etiqueta fica vinculada."
+        : "Primeira vez desta etiqueta: escolha o seu item. Depois ele reconhece sozinho.";
+      confirmScreen(ctx, msg);
+    })();
+  });
+}
+
+/* guarda preço + foto + vínculo; devolve uma função para desfazer */
+async function commit(ctx, prod, price){
+  const { cid } = ctx;
+  const prevPrice = priceFor(cid, prod); const prevCopy = prevPrice ? { ...prevPrice } : null;
+  const prevLinks = S.links.slice(), prevAliases = S.aliases.slice();
+  const k = photoKey(cid, prod.id);
+  let prevBlob = null; const prevStamp = S.photos[k];
+  try { if (prevStamp) prevBlob = await PhotoDB.get(k); } catch(e) {}
+  setPrice(cid, prod, price);
+  if (ctx.text.trim()) rememberLink(cid, ctx.text, prod.id);
+  if (ctx.ean && prod.barCode !== ctx.ean) rememberAlias(cid, "", prod.id, ctx.ean);
+  save();   // grava o preço na hora
+  try {     // guarda a foto nova no lugar da antiga
+    const blob = await canvasToBlob(imageToCanvas(ctx.loaded.img, 1280, false), 0.72);
+    await PhotoDB.put(k, blob); S.photos[k] = Date.now();
+  } catch(e) { toast("Preço salvo, mas a foto não pôde ser guardada"); }
+  save();
+  return async () => {   // desfazer
+    if (prevCopy) Object.assign(priceFor(cid, prod) || {}, prevCopy);
+    else S.prices = S.prices.filter(p => !(p.competitorId === cid && p.productId === prod.id));
+    S.links = prevLinks; S.aliases = prevAliases;
+    if (prevBlob) { await PhotoDB.put(k, prevBlob); S.photos[k] = prevStamp; } else removePhoto(cid, prod.id);
+    save();
+  };
+}
+
+/* reconheceu sozinho: salva e mostra o resultado */
+async function autoSave(ctx){
+  const prod = ctx.chosen, price = ctx.price;
+  const undo = await commit(ctx, prod, price);
+  render();
+  modal(`<div class="done">✓ Salvo</div>
+    <p class="pname" style="text-align:center;margin:6px 0 2px">${esc(prod.name)}</p>
+    <div class="big-price">${brl(price)}</div>
+    <p class="sub" style="text-align:center;margin:0 0 10px">${esc(ctx.comp.name)} · reconhecido pelo vínculo</p>
+    <img class="big-photo" style="max-height:26vh" src="${ctx.loaded.url}" alt="">
+    <div class="foot sticky">
+      <button class="btn btn-ghost" data-x>Fechar</button>
+      <button class="btn btn-white" data-fix>${IC.edit} Corrigir</button>
+      <button class="btn btn-orange" data-next>${IC.camera} Próxima foto</button>
+    </div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = () => { URL.revokeObjectURL(ctx.loaded.url); close(); };
+    m.querySelector("[data-next]").onclick = () => { URL.revokeObjectURL(ctx.loaded.url); close(); openCamera(null); };
+    m.querySelector("[data-fix]").onclick = async () => { await undo(); render(); confirmScreen(ctx, "Corrija o item ou o preço e salve."); };
+  });
+}
+
+/* tela para conferir/escolher item e preço */
+function confirmScreen(ctx, message){
+  const { cid, comp, loaded, fixedProduct } = ctx;
+  modal(`<h2>${fixedProduct ? esc(fixedProduct.name) : "Foto da etiqueta"}</h2>
+    <p class="sub" style="margin:-8px 0 12px">Concorrente: <b style="color:var(--text)">${esc(comp.name)}</b></p>
+    <img class="big-photo" style="max-height:24vh" src="${loaded.url}" alt="Foto da etiqueta">
+    <div class="status ${ctx.price && !ctx.darkUnread ? "ok" : "warn"}">${esc(message)}</div>
+    <div class="field" style="margin-top:14px"><label>Preço (o menor da etiqueta)</label><input inputmode="numeric" autocomplete="off" data-p></div>
+    ${fixedProduct ? "" : `
+      <div class="field" style="margin-top:6px"><label>Meu item</label><input type="search" data-q placeholder="Buscar o item"></div>
+      <div class="choices" data-c></div>`}
+    <div class="foot sticky">
+      <button class="btn btn-ghost" data-x>Cancelar</button>
+      <button class="btn btn-white" data-next>${IC.camera} Salvar + próx.</button>
+      <button class="btn btn-orange" data-ok>Salvar</button>
+    </div>`,
+  m => {
+    const pIn = m.querySelector("[data-p]");
+    const pi = bindPriceInput(pIn, Math.round((ctx.price || 0) * 100), () => doSave(false));
+    const q = m.querySelector("[data-q]"), box = m.querySelector("[data-c]");
+    const draw = () => {
+      if (!box) return;
+      const nq = norm(q.value.trim());
+      let list = nq ? [...S.products].sort(byName).filter(p => norm(p.name).includes(nq) || p.barCode.includes(nq))
+                    : ctx.ranked.slice(0, 4).map(r => r.p);
+      if (ctx.chosen && !list.includes(ctx.chosen)) list = [ctx.chosen, ...list];
+      list = list.slice(0, nq ? 8 : 4);
+      box.innerHTML = list.length ? list.map(p => {
+        const pr = priceFor(cid, p);
+        return `<button class="choice ${ctx.chosen === p ? "on" : ""}" data-id="${p.id}"><span>${esc(p.name)}</span>${pr ? `<small>atual ${brl(pr.price)}</small>` : ""}</button>`;
+      }).join("") : `<p class="hint">Busque o seu item acima e toque nele.</p>`;
+    };
+    if (box) {
+      box.onclick = e => { const b = e.target.closest("[data-id]"); if (!b) return; ctx.chosen = S.products.find(p => p.id === +b.dataset.id); draw(); };
+      q.oninput = draw; draw();
+    }
+    const doSave = async (next) => {
+      if (!ctx.chosen) { toast("Escolha o seu item"); q && q.focus(); return; }
+      const price = pi.value();
+      if (!(price > 0)) { toast("Informe o preço"); pIn.focus(); return; }
+      const mine = layer.firstChild;
+      if (next) { camTarget = null; cam.value = ""; cam.click(); }   // abre a câmera já, no toque
+      await commit(ctx, ctx.chosen, price);
+      URL.revokeObjectURL(loaded.url);
+      if (layer.firstChild === mine) close();
+      render(); toast(`${ctx.chosen.name}: ${brl(price)}`);
+    };
+    m.querySelector("[data-x]").onclick = () => { URL.revokeObjectURL(loaded.url); close(); };
+    m.querySelector("[data-ok]").onclick = () => doSave(false);
+    m.querySelector("[data-next]").onclick = () => doSave(true);
+  });
+}
+
+function newCompetitorDialog(){
+  modal(`<h2>Novo concorrente</h2>
+    <form data-f><div class="field"><label>Nome do concorrente</label><input data-n maxlength="80"></div>
+    <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Criar</button></div></form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = m.querySelector("[data-n]").value.trim();
+      if (!name) return;
+      const c = { id: newId(), name }; S.competitors.push(c); S.selectedCompetitorId = c.id;
+      save(); close(); render(); toast(`Concorrente "${name}" criado e selecionado`);
+    };
+  });
+}
+
+function newProductDialog(){
+  modal(`<h2>Novo produto</h2>
+    <form data-f>
+      <div class="field"><label>Nome</label><input data-n maxlength="120"></div>
+      <div class="field" style="margin-top:18px"><label>Código de barras</label><input data-b inputmode="numeric" maxlength="13"></div>
+      <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Salvar</button></div>
+    </form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    const b = m.querySelector("[data-b]"); b.oninput = () => { b.value = b.value.replace(/\D/g, ""); };
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = m.querySelector("[data-n]").value.trim().toUpperCase();
+      if (!name) return;
+      S.products.push({ id: newId(), name, barCode: b.value.trim() });
+      save(); close(); render(); toast("Produto adicionado");
+    };
+  });
+}
+
+function barcodeDialog(product){
+  const code = sanitizeEAN13(product.barCode);
+  modal(`<h2 style="font-size:16px">${esc(product.name)}</h2>
+    ${code ? `<div class="barcode-box">${ean13SVG(code)}</div>` : `<p class="sub">Este produto não tem um código EAN-13 válido (13 números).</p>`}
+    <div class="foot"><button class="btn btn-orange" data-x>Fechar</button></div>`,
+  m => { m.querySelector("[data-x]").onclick = close; });
+}
+
+function exportDialog(blobFn, filename){
+  const share = canShareFiles();
+  modal(`<h2>Exportar pesquisa de preços</h2>
+    <p class="sub">${share ? "Deseja salvar ou compartilhar a planilha?" : "A planilha será salva em Excel (.xlsx)."}</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button>
+      ${share ? `<button class="btn btn-white" data-s>${IC.share} Compartilhar</button>` : ""}
+      <button class="btn btn-orange" data-d>${IC.dl} Salvar</button></div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-d]").onclick = () => { close(); saveFile(blobFn(), filename); };
+    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { close(); shareFile(blobFn(), filename); };
+  });
+}
+
+/* ---------- telas ---------- */
+const app = document.getElementById("app");
+let query = "";
+let openCompetitorId = null;
+
+function render(){
+  const tab = (location.hash || "#pesquisa").slice(1);
+  document.querySelectorAll("nav.bottom a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab || (tab === "" && a.dataset.tab === "pesquisa")));
+  if (tab === "concorrentes") openCompetitorId ? renderCompetitor() : renderCompetitors();
+  else renderResearch();
+}
+
+function renderResearch(){
+  const comps = [...S.competitors].sort(byName);
+  if (S.selectedCompetitorId && !S.competitors.some(c => c.id === S.selectedCompetitorId)) S.selectedCompetitorId = null;
+  app.innerHTML = `
+    <h1>PESQUISA DE PREÇO</h1>
+    <div class="field"><label>Buscar produto</label><input id="q" type="search" placeholder="Nome ou código de barras" value="${esc(query)}"></div>
+    <div class="row">
+      <button class="btn btn-orange" id="addP">+ Produto</button>
+      <button class="btn btn-orange" id="addC">+ Concorrente</button>
+    </div>
+    <div class="field" style="margin-top:18px">
+      <label>Concorrente</label>
+      <select id="sel">
+        <option value="">${comps.length ? "Selecione concorrente" : "Nenhum concorrente – crie um"}</option>
+        ${comps.map(c => `<option value="${c.id}" ${c.id === S.selectedCompetitorId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select><span class="chev">${IC.chev}</span>
+    </div>
+    <button class="btn btn-orange btn-cam" id="camBtn">${IC.camera} Foto da etiqueta</button>
+    <p class="hint" style="text-align:center">Tire a foto de perto da etiqueta. Na 1ª vez você escolhe o item; depois ele reconhece sozinho.</p>
+    <div class="list" id="list"></div>`;
+  app.querySelector("#camBtn").onclick = () => openCamera(null);
+  const q = app.querySelector("#q");
+  q.oninput = () => { query = q.value; drawList(); };
+  app.querySelector("#addP").onclick = newProductDialog;
+  app.querySelector("#addC").onclick = newCompetitorDialog;
+  app.querySelector("#sel").onchange = e => { S.selectedCompetitorId = e.target.value ? +e.target.value : null; save(); drawList(); if (S.selectedCompetitorId) warmOCR(); };
+  drawList();
+}
+
+function drawList(){
+  const list = document.getElementById("list");
+  const nq = norm(query.trim());
+  const items = [...S.products].sort(byName).filter(p => !nq || norm(p.name).includes(nq) || p.barCode.includes(nq));
+  const cid = S.selectedCompetitorId;
+  if (!items.length) { list.innerHTML = `<div class="empty-state">Nenhum produto encontrado.</div>`; return; }
+  list.innerHTML = items.map(p => {
+    const pr = cid ? priceFor(cid, p) : null;
+    const k = cid ? photoKey(cid, p.id) : null;
+    return `<div class="card">
+      <div class="ptop">
+        ${k && S.photos[k] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
+        <p class="pname">${esc(p.name)}</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-orange" data-bar="${p.id}" aria-label="Código de barras" ${sanitizeEAN13(p.barCode) ? "" : "disabled title='Sem código de barras'"}>${IC.barcode}</button>
+        <button class="btn btn-orange grow" data-cam="${p.id}">${IC.camera} Foto</button>
+        <button class="btn btn-white grow" data-edit="${p.id}">${IC.edit} Preço</button>
+      </div>
+      <div class="price ${pr ? "" : "empty"}">${pr ? "Preço: " + brl(pr.price) + (pr.price2 ? `<br><span class="stamp" style="font-size:14px">2º preço: ${brl(pr.price2)}</span>` : "") : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
+    </div>`;
+  }).join("");
+  fillThumbs(list);
+  list.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view));
+    if (!prod) return;
+    if (b.dataset.bar) return barcodeDialog(prod);
+    if (b.dataset.view) return photoViewer(photoKey(cid, prod.id), prod.name);
+    if (b.dataset.cam) return openCamera(prod);
+    if (!S.selectedCompetitorId) { toast("Selecione ou crie um concorrente primeiro"); newCompetitorDialog(); return; }
+    const existing = priceFor(S.selectedCompetitorId, prod);
+    priceDialog(prod.name, existing, price => {
+      setPrice(S.selectedCompetitorId, prod, price);
+      save(); drawList(); toast("Preço salvo: " + brl(price));
+    });
+  };
+}
+
+function renderCompetitors(){
+  const comps = [...S.competitors].sort(byName);
+  app.innerHTML = `
+    <div class="head"><h1 style="font-size:26px">Concorrentes</h1>
+      <button class="btn btn-orange" id="exp" ${comps.length ? "" : "disabled"}>Exportar</button></div>
+    ${comps.length ? `<div class="list">${comps.map(c => `
+      <div class="card alt comp">
+        <button class="cname" data-open="${c.id}">${esc(c.name)}</button>
+        <span class="count">${pricesOf(c.id).length} ${pricesOf(c.id).length === 1 ? "produto" : "produtos"}</span>
+        <button class="icon-btn" style="color:var(--red)" data-del="${c.id}" aria-label="Excluir">${IC.del}</button>
+      </div>`).join("")}</div>`
+    : `<div class="empty-state">Nenhum concorrente cadastrado ainda.</div>`}
+    <div class="small-links">
+      <button id="bk">Fazer backup dos dados</button>
+      <button id="rs">Restaurar backup</button>
+    </div>
+    <input type="file" id="file" accept=".json,application/json" hidden>`;
+  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, "Pesquisa_de_Precos.xlsx");
+  app.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.open) { openCompetitorId = +b.dataset.open; render(); window.scrollTo(0,0); }
+    if (b.dataset.del) {
+      const c = S.competitors.find(x => x.id === +b.dataset.del);
+      confirmBox("Excluir concorrente", `Excluir "${c.name}" e todos os preços dele?`, "Excluir", () => {
+        S.competitors = S.competitors.filter(x => x.id !== c.id);
+        S.prices = S.prices.filter(p => p.competitorId !== c.id);
+        removeCompetitorPhotos(c.id); S.links = S.links.filter(l => l.cid !== c.id);
+        save(); render();
+      });
+    }
+  };
+  app.querySelector("#bk").onclick = () => {
+    const d = new Date().toISOString().slice(0,10);
+    saveFile(new Blob([JSON.stringify(S, null, 1)], {type:"application/json"}), `DScanner_backup_${d}.json`);
+  };
+  const file = app.querySelector("#file");
+  app.querySelector("#rs").onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data.products) || !Array.isArray(data.competitors) || !Array.isArray(data.prices)) throw 0;
+      confirmBox("Restaurar backup", "Isso substitui todos os dados atuais deste navegador pelos do arquivo.", "Restaurar", () => {
+        S = data; S.photos = S.photos || {}; S.aliases = S.aliases || []; S.links = S.links || []; save(); render(); toast("Backup restaurado");
+      });
+    } catch(e) { toast("Arquivo de backup inválido"); }
+  };
+}
+
+function renderCompetitor(){
+  const c = S.competitors.find(x => x.id === openCompetitorId);
+  if (!c) { openCompetitorId = null; return renderCompetitors(); }
+  const items = pricesOf(c.id);
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" style="color:var(--primary)" id="back" aria-label="Voltar">${IC.back}</button>
+      <h1>${esc(c.name)}</h1>
+      <span class="badge">${items.length} ${items.length === 1 ? "produto" : "produtos"}</span>
+      <button class="icon-btn" style="color:var(--red)" id="clr" aria-label="Limpar todos os produtos" ${items.length ? "" : "disabled"}>${IC.sweep}</button>
+    </div>
+    ${items.length ? `<div class="list">${items.map(p => `
+      <div class="card alt">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          ${S.photos[photoKey(c.id, p.productId)] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${photoKey(c.id, p.productId)}" alt=""></button>` : ""}
+          <p class="pname" style="flex:1;font-size:17px;margin:6px 0">${esc(p.name)}</p>
+          <button class="icon-btn" style="color:var(--primary)" data-edit="${p.id}" aria-label="Editar">${IC.edit}</button>
+          <button class="icon-btn" style="color:var(--red)" data-del="${p.id}" aria-label="Excluir">${IC.del}</button>
+        </div>
+        <div style="color:var(--primary);font-weight:600;font-size:16px">Preço: ${brl(p.price)}${p.price2 ? ` <span style="color:var(--muted);font-weight:400;font-size:14px">/ ${brl(p.price2)}</span>` : ""}</div>
+        <div class="sub">Código de barras: ${esc(p.barCode || "—")}</div>
+        ${p.updatedAt ? `<div class="stamp">Atualizado em ${new Date(p.updatedAt).toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"})}</div>` : ""}
+      </div>`).join("")}</div>`
+    : `<div class="empty-state">Nenhum preço pesquisado neste concorrente ainda.<br>Vá em <b>Pesquisa</b>, selecione "${esc(c.name)}" e edite os preços.</div>`}
+    ${items.length ? `<button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>` : ""}`;
+  app.querySelector("#back").onclick = () => { openCompetitorId = null; render(); };
+  app.querySelector("#clr").onclick = () => confirmBox("Limpar produtos", `Apagar todos os ${items.length} preços de "${c.name}"?`, "Limpar", () => {
+    S.prices = S.prices.filter(p => p.competitorId !== c.id); removeCompetitorPhotos(c.id); save(); render();
+  });
+  fillThumbs(app);
+  const exp = app.querySelector("#exp");
+  if (exp) exp.onclick = () => exportDialog(() => xlsxOne(c), `produtos_${safeName(c.name)}.xlsx`);
+  app.onclick = e => {
+    const b = e.target.closest("button[data-edit],button[data-del],button[data-view]"); if (!b) return;
+    const p = S.prices.find(x => x.id === +(b.dataset.edit || b.dataset.del || b.dataset.view)); if (!p) return;
+    if (b.dataset.view) return photoViewer(photoKey(c.id, p.productId), p.name);
+    if (b.dataset.edit) priceDialog("Editar preço de " + p.name, p, price => { p.price = price; p.price2 = null; p.updatedAt = Date.now(); save(); render(); });
+    else { removePhoto(c.id, p.productId); S.prices = S.prices.filter(x => x.id !== p.id); save(); render(); }
+  };
+}
+
+window.addEventListener("hashchange", () => { openCompetitorId = null; app.onclick = null; render(); window.scrollTo(0,0); });
+render();
+if (S.selectedCompetitorId) warmOCR();
+</script>
+</body>
+</html>
