@@ -127,6 +127,8 @@
   .radio{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;margin-top:8px;cursor:pointer}
   .radio input{width:20px;height:20px;accent-color:var(--primary)}
   .obtn{background:var(--primary-soft);color:var(--primary);width:38px;height:38px;border-radius:8px;font-size:14px;flex:none}
+  .ordbox{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:8px}
+  .ordbox.ordc{background:var(--primary-soft);border-color:#C9D6EF}
   .big-price{font-size:28px;font-weight:700;color:var(--primary);text-align:center;margin:4px 0 10px}
 </style>
 </head>
@@ -193,7 +195,7 @@ function normalizeState(s){
   s = s && typeof s === "object" ? s : blankState();
   if (!Array.isArray(s.products)) s.products = blankState().products;
   s.competitors = s.competitors || []; s.prices = s.prices || []; s.photos = s.photos || {};
-  s.links = s.links || []; s.aliases = (s.aliases || []).filter(a => a.ean); s.pending = s.pending || [];
+  s.links = s.links || []; s.aliases = (s.aliases || []).filter(a => a.ean); s.pending = s.pending || []; s.orders = s.orders || {};
   const maxId = Math.max(0, ...s.products.map(x => x.id), ...s.competitors.map(x => x.id), ...s.prices.map(x => x.id));
   if (!(s.nextId > maxId)) s.nextId = maxId + 1;
   return s;
@@ -316,6 +318,15 @@ function markNotFound(cid, prod){
   const ex = priceFor(cid, prod), now = Date.now();
   if (ex) { if (!ex.notFound) ex.priceAt = ex.priceAt || ex.updatedAt; ex.notFound = true; ex.check = false; ex.updatedAt = now; }
   else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price: null, notFound: true, updatedAt: now });
+}
+/* ordem dos itens: cada concorrente pode ter a sua; sem ordem própria = ordem geral */
+function productsFor(cid){
+  const ord = cid && S.orders[cid];
+  if (!ord) return S.products;
+  const map = new Map(S.products.map(p => [p.id, p])), seen = new Set(), out = [];
+  for (const id of ord) { const p = map.get(id); if (p && !seen.has(id)) { out.push(p); seen.add(id); } }
+  for (const p of S.products) if (!seen.has(p.id)) out.push(p);   // itens que ainda não estavam na ordem dele
+  return out;
 }
 /* agrupa itens parecidos (pela 1ª palavra: ARROZ, FEIJÃO, CAFÉ…), mantendo a sua ordem dentro de cada grupo */
 const groupKey = name => (norm(name).split(/[^a-z0-9]+/).filter(Boolean)[0] || "");
@@ -1215,6 +1226,7 @@ function editProductDialog(prod){
       const n = S.prices.filter(x => x.productId === prod.id && x.price > 0).length;
       confirmBox("Excluir item", `Excluir "${prod.name}" da sua lista?${n ? ` Os preços dele em ${n} concorrente(s) também serão apagados.` : ""}`, "Excluir", () => {
         S.products = S.products.filter(p => p.id !== prod.id);
+        for (const k of Object.keys(S.orders)) S.orders[k] = S.orders[k].filter(id => id !== prod.id);
         S.prices = S.prices.filter(x => x.productId !== prod.id);
         S.links = S.links.filter(l => l.pid !== prod.id);
         S.aliases = S.aliases.filter(a => a.productId !== prod.id);
@@ -1270,9 +1282,14 @@ function newProductDialog(){
       if (S.products.some(p => norm(p.name) === norm(name))) { toast("Esse produto já está na lista"); return; }
       const item = { id: newId(), name, barCode: b.value.trim() };
       const v = pos.value;
+      const anchor = +v >= 0 ? S.products[+v] : null;   // item que fica antes do novo
       if (v === "start") S.products.unshift(item);
       else if (+v >= 0) S.products.splice(+v + 1, 0, item);
       else S.products.push(item);
+      for (const k of Object.keys(S.orders)) {   // nos concorrentes com ordem própria: depois do mesmo vizinho
+        const o = S.orders[k], i = anchor ? o.indexOf(anchor.id) : -1;
+        if (v === "start") o.unshift(item.id); else if (i >= 0) o.splice(i + 1, 0, item.id); else o.push(item.id);
+      }
       save(); close(); render(); toast("Produto adicionado");
     };
   });
@@ -1315,7 +1332,7 @@ let query = "";
 let openCompetitorId = null;
 
 function render(){
-  if (organizing) return renderOrganize();
+  if (organizing) return renderOrganize(organizing.cid);
   const tab = (location.hash || "#pesquisa").slice(1);
   document.querySelectorAll("nav.bottom a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab || (tab === "" && a.dataset.tab === "pesquisa")));
   if (tab === "concorrentes") openCompetitorId ? renderCompetitor() : renderCompetitors();
@@ -1347,7 +1364,7 @@ function renderResearch(){
     <div class="list" id="list"></div>`;
   app.querySelector("#camBtn").onclick = () => openCamera(null);
   app.querySelector("#galBtn").onclick = openGallery;
-  app.querySelector("#myItems").onclick = () => { organizing = true; render(); window.scrollTo(0, 0); };
+  app.querySelector("#myItems").onclick = () => { organizing = { cid: null }; render(); window.scrollTo(0, 0); };
   app.querySelector("#pendBtn").onclick = pendingScreen;
   app.querySelector("#usr").onclick = switchUser;
   const q = app.querySelector("#q");
@@ -1361,7 +1378,7 @@ function renderResearch(){
 function drawList(){
   const list = document.getElementById("list");
   const nq = norm(query.trim());
-  const items = S.products.filter(p => !nq || norm(p.name).includes(nq) || p.barCode.includes(nq));
+  const items = productsFor(S.selectedCompetitorId).filter(p => !nq || norm(p.name).includes(nq) || p.barCode.includes(nq));
   const cid = S.selectedCompetitorId;
   const rdSel = cid ? researchDay(cid) : null;
   if (!items.length) { list.innerHTML = `<div class="empty-state">Nenhum produto encontrado.</div>`; return; }
@@ -1427,7 +1444,7 @@ function renderCompetitors(){
     if (b.dataset.del) {
       const c = S.competitors.find(x => x.id === +b.dataset.del);
       confirmBox("Excluir concorrente", `Excluir "${c.name}" e todos os preços dele?`, "Excluir", () => {
-        S.competitors = S.competitors.filter(x => x.id !== c.id);
+        S.competitors = S.competitors.filter(x => x.id !== c.id); delete S.orders[c.id];
         S.prices = S.prices.filter(p => p.competitorId !== c.id);
         removeCompetitorPhotos(c.id); S.links = S.links.filter(l => l.cid !== c.id);
         S.pending.filter(p => p.cid === c.id).forEach(p => dropPending(p.id));
@@ -1467,9 +1484,9 @@ function renderCompetitor(){
     </div>
     <div class="summary">
       <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${found}</b> encontrados · <b style="color:var(--muted)">${S.products.length - found}</b> sem preço` : "Nenhum preço pesquisado ainda."}</div>
-      <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar</button>
+      <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar${S.orders[c.id] ? "*" : ""}</button>
     </div>
-    <div class="list" id="clist">${S.products.map(p => {
+    <div class="list" id="clist">${productsFor(c.id).map(p => {
       const pr = priceFor(c.id, p), ok = dayPrice(c.id, p, rd), k = photoKey(c.id, p.id);
       return `<div class="card crow ${ok ? "" : "nf"}">
         ${S.photos[k] && ok ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
@@ -1484,7 +1501,7 @@ function renderCompetitor(){
       </div>`; }).join("")}</div>
     <button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>`;
   app.querySelector("#back").onclick = () => { openCompetitorId = null; render(); };
-  app.querySelector("#org").onclick = () => { organizing = true; render(); window.scrollTo(0, 0); };
+  app.querySelector("#org").onclick = () => { organizing = { cid: c.id }; render(); window.scrollTo(0, 0); };
   app.querySelector("#clr").onclick = () => confirmBox("Zerar pesquisa", `Começar do zero a pesquisa de "${c.name}"? Todos os itens ficam como "não encontrado" (vazios no Excel). Os itens continuam na lista e os últimos preços ficam guardados.`, "Zerar", () => {
     for (const p of S.products) markNotFound(c.id, p);
     save(); render(); toast("Pesquisa zerada");
@@ -1505,28 +1522,42 @@ function renderCompetitor(){
   };
 }
 
-/* ---------- organizar a ordem dos itens (vale para tudo) ---------- */
-function renderOrganize(){
+/* ---------- organizar a ordem dos itens: geral (cid = null) ou de um concorrente ---------- */
+function renderOrganize(cid){
+  const comp = cid && S.competitors.find(c => c.id === cid);
+  if (cid && !comp) { organizing = false; return render(); }
+  const own = comp && !!S.orders[cid];
   app.onclick = null;
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="done1" aria-label="Voltar">${IC.back}</button>
-      <h1>Meus itens</h1>
+      <h1>${comp ? "Ordem: " + esc(comp.name) : "Meus itens"}</h1>
       <button class="btn btn-orange" id="done2" style="padding:9px 16px">Pronto</button>
     </div>
+    <div class="ordbox ${comp ? "ordc" : ""}">${comp
+      ? (own ? `Esta é a ordem <b>só do ${esc(comp.name)}</b>. Os outros concorrentes não mudam.`
+             : `Hoje o ${esc(comp.name)} usa a <b>ordem geral</b>. Ao mudar algo aqui, ele passa a ter <b>ordem própria</b>.`)
+      : `Esta é a <b>ordem geral</b>: vale para concorrentes sem ordem própria e para o Excel.`}</div>
     <p class="hint" style="margin:0 0 8px">Arraste pelo <b>☰</b> ou use <b>▲ ▼</b> para mudar a ordem. <b>Toque no nome</b> para editar ou excluir o item.</p>
     <div class="row" style="margin-bottom:10px">
       <button class="btn btn-white" id="grp">🧺 Juntar parecidos</button>
       <button class="btn btn-white" id="addP2">+ Produto</button>
     </div>
-    <div id="olist">${S.products.map(p => `<div class="orow" data-id="${p.id}">
+    ${own ? `<button class="btn btn-ghost" id="reset" style="width:100%;margin:-4px 0 8px;color:var(--red)">↺ Voltar para a ordem geral</button>` : ""}
+    <div id="olist">${productsFor(cid).map(p => `<div class="orow" data-id="${p.id}">
       <span class="handle" aria-label="Arrastar">☰</span>
       <span class="oname" role="button">${esc(p.name)}<small>${p.barCode ? esc(p.barCode) : "sem código"} · editar</small></span>
       <button class="obtn" data-up aria-label="Subir">▲</button><button class="obtn" data-dn aria-label="Descer">▼</button>
     </div>`).join("")}</div>`;
   const olist = app.querySelector("#olist");
+  let firstChange = !own;
   const apply = () => {
     const ids = [...olist.children].map(r => +r.dataset.id);
+    if (comp) {
+      S.orders[cid] = ids; save();
+      if (firstChange) { firstChange = false; const box = app.querySelector(".ordbox"); if (box) box.innerHTML = `Esta é a ordem <b>só do ${esc(comp.name)}</b>. Os outros concorrentes não mudam.`; }
+      return;
+    }
     const map = new Map(S.products.map(p => [p.id, p]));
     S.products = ids.map(id => map.get(id)).filter(Boolean).concat(S.products.filter(p => !ids.includes(p.id)));
     save();
@@ -1535,7 +1566,13 @@ function renderOrganize(){
   app.querySelector("#done1").onclick = done; app.querySelector("#done2").onclick = done;
   app.querySelector("#addP2").onclick = newProductDialog;
   app.querySelector("#grp").onclick = () => confirmBox("Juntar parecidos", "Colocar juntos os itens do mesmo tipo (arroz com arroz, feijão com feijão…)? A ordem dentro de cada tipo é mantida.", "Juntar", () => {
-    S.products = groupedProducts(); save(); render(); toast("Itens parecidos agrupados");
+    if (comp) S.orders[cid] = groupedProducts(productsFor(cid)).map(p => p.id);
+    else S.products = groupedProducts();
+    save(); render(); toast("Itens parecidos agrupados");
+  });
+  const rs = app.querySelector("#reset");
+  if (rs) rs.onclick = () => confirmBox("Ordem geral", `O ${comp.name} volta a usar a ordem geral? A ordem própria dele será apagada.`, "Voltar", () => {
+    delete S.orders[cid]; save(); render(); toast("Usando a ordem geral");
   });
   olist.onclick = e => {
     const row = e.target.closest(".orow"); if (!row) return;
