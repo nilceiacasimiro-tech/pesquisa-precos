@@ -129,6 +129,14 @@
   .obtn{background:var(--primary-soft);color:var(--primary);width:38px;height:38px;border-radius:8px;font-size:14px;flex:none}
   .ordbox{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:8px}
   .ordbox.ordc{background:var(--primary-soft);border-color:#C9D6EF}
+  .pline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+  .pline .price{margin-top:0;text-align:right}
+  .same-btn{background:#E8F5E9;color:var(--ok);border:1px solid #C8E6C9;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;margin-top:6px}
+  .same-btn:active{background:#C8E6C9}
+  .selrow{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer}
+  .selrow input{width:24px;height:24px;accent-color:var(--primary);flex:none}
+  .selbar{position:fixed;left:0;right:0;bottom:58px;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;z-index:7;box-shadow:0 -2px 8px #0f172a14}
+  .selbar .btn{padding:13px 10px}
   .big-price{font-size:28px;font-weight:700;color:var(--primary);text-align:center;margin:4px 0 10px}
 </style>
 </head>
@@ -313,6 +321,11 @@ function dayPrice(cid, prod, rd){
   const p = priceFor(cid, prod);
   return p && !p.notFound && p.price > 0 && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd) ? p : null;
 }
+/* "mesmo preço": confirma hoje o último preço guardado */
+function lastPrice(cid, prod){ const x = priceFor(cid, prod); return x && x.price > 0 ? x.price : null; }
+function confirmSame(cid, prod){ const v = lastPrice(cid, prod); if (v) setPrice(cid, prod, v, false); return v; }
+/* histórico do concorrente: itens que já tiveram preço ou foto nele */
+const inHistory = (cid, p) => !!(lastPrice(cid, p) || S.photos[photoKey(cid, p.id)]);
 /* marca como não encontrado no dia, mas guarda o último preço */
 function markNotFound(cid, prod){
   const ex = priceFor(cid, prod), now = Date.now();
@@ -1397,14 +1410,22 @@ function drawList(){
         <button class="btn btn-orange grow" data-cam="${p.id}">${IC.camera} Foto</button>
         <button class="btn btn-white grow" data-edit="${p.id}">${IC.edit} Preço</button>
       </div>
-      <div class="price ${pr && !nf && pr.price > 0 ? "" : "empty"}">${nf ? `Não encontrado em ${dayLabel(pr.updatedAt)}` : pr && pr.price > 0 ? (pr.check ? `<span class="chk">⚠ conferir</span> ` : "") + (old ? `<span class="stamp">antigo, de ${dayLabel(pr.priceAt || pr.updatedAt)} · </span>` : "") + "Preço: " + brl(pr.price) + (pr.price2 ? `<br><span class="stamp" style="font-size:14px">2º preço: ${brl(pr.price2)}</span>` : "") : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
+      <div class="pline">
+        ${cid && pr && pr.price > 0 && (old || nf) ? `<button class="same-btn" data-same="${p.id}" style="margin:0">✓ Mesmo preço</button>` : "<span></span>"}
+        <div class="price ${pr && !nf && pr.price > 0 && !old ? "" : "empty"}">${
+          nf ? `Não encontrado em ${dayLabel(pr.updatedAt)}${pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div>` : ""}`
+          : pr && pr.price > 0 ? (old ? `Último: ${brl(pr.price)}<div class="stamp">de ${dayLabel(pr.priceAt || pr.updatedAt)}</div>`
+                                      : (pr.check ? `<span class="chk">⚠ conferir</span> ` : "") + "Preço: " + brl(pr.price))
+          : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
+      </div>
     </div>`;
   }).join("");
   fillThumbs(list);
   list.onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
-    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view));
+    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view || b.dataset.same));
     if (!prod) return;
+    if (b.dataset.same) { const v = confirmSame(cid, prod); save(); drawList(); return toast(`✓ ${prod.name}: mesmo preço ${brl(v)}`); }
     if (b.dataset.bar) return barcodeDialog(prod);
     if (b.dataset.view) return photoViewer(photoKey(cid, prod.id), prod.name);
     if (b.dataset.cam) return openCamera(prod);
@@ -1425,8 +1446,9 @@ function renderCompetitors(){
     ${comps.length ? `<div class="list">${comps.map(c => `
       <div class="card alt comp">
         <button class="cname" data-open="${c.id}">${esc(c.name)}</button>
-        <span class="count">${(() => { const rd = researchDay(c.id); const n = rd ? S.products.filter(p => dayPrice(c.id, p, rd)).length : 0;
-          return rd ? `${n} de ${S.products.length} · ${dayLabel(rd)}` : "sem pesquisa"; })()}</span>
+        <span class="count">${(() => { const rd = researchDay(c.id); const h = S.products.filter(p => inHistory(c.id, p)).length;
+          const n = rd ? S.products.filter(p => dayPrice(c.id, p, rd)).length : 0;
+          return h ? `${n} de ${h} · ${dayLabel(rd)}` : "sem pesquisa"; })()}</span>
         <button class="icon-btn" style="color:var(--red)" data-del="${c.id}" aria-label="Excluir">${IC.del}</button>
       </div>`).join("")}</div>`
     : `<div class="empty-state">Nenhum concorrente cadastrado ainda.</div>`}
@@ -1471,55 +1493,102 @@ function renderCompetitors(){
 }
 
 let organizing = false;
+let selecting = null;   // Set com os itens marcados (modo "selecionar vários")
 function renderCompetitor(){
   const c = S.competitors.find(x => x.id === openCompetitorId);
-  if (!c) { openCompetitorId = null; organizing = false; return renderCompetitors(); }
+  if (!c) { openCompetitorId = null; organizing = false; selecting = null; return renderCompetitors(); }
   const rd = researchDay(c.id);
-  const found = rd ? S.products.filter(p => dayPrice(c.id, p, rd)).length : 0;
+  const hist = productsFor(c.id).filter(p => inHistory(c.id, p));
+  const okSet = new Set(hist.filter(p => dayPrice(c.id, p, rd)).map(p => p.id));
+  const sameable = hist.filter(p => !okSet.has(p.id) && lastPrice(c.id, p));
+  if (selecting) return renderSelect(c, sameable);
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="back" aria-label="Voltar">${IC.back}</button>
       <h1>${esc(c.name)}</h1>
-      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${S.prices.some(p => p.competitorId === c.id) ? "" : "disabled"}>${IC.sweep} Zerar</button>
+      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${hist.length ? "" : "disabled"}>${IC.sweep} Zerar</button>
     </div>
     <div class="summary">
-      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${found}</b> encontrados · <b style="color:var(--muted)">${S.products.length - found}</b> sem preço` : "Nenhum preço pesquisado ainda."}</div>
+      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${okSet.size}</b> encontrado${okSet.size === 1 ? "" : "s"}${sameable.length ? ` · <b style="color:var(--muted)">${sameable.length}</b> ainda sem preço hoje` : ""}` : "Nenhum preço pesquisado ainda."}</div>
       <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar${S.orders[c.id] ? "*" : ""}</button>
     </div>
-    <div class="list" id="clist">${productsFor(c.id).map(p => {
-      const pr = priceFor(c.id, p), ok = dayPrice(c.id, p, rd), k = photoKey(c.id, p.id);
+    ${sameable.length ? `<button class="btn btn-white" id="selBtn" style="width:100%;margin:6px 0 2px">☑ Selecionar vários com o mesmo preço</button>` : ""}
+    ${hist.length ? `<div class="list" id="clist">${hist.map(p => {
+      const pr = priceFor(c.id, p), ok = okSet.has(p.id), k = photoKey(c.id, p.id);
       return `<div class="card crow ${ok ? "" : "nf"}">
-        ${S.photos[k] && ok ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
+        ${S.photos[k] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
         <div style="flex:1;min-width:0">
           <p class="pname" style="font-size:15px;margin:2px 0 4px">${esc(p.name)}</p>
           ${ok ? `<div class="cprice">${pr.check ? `<span class="chk">⚠ conferir</span> ` : ""}${brl(pr.price)}</div>`
-               : `<div class="cprice nf">não encontrado</div>${pr && pr.price > 0 ? `<div class="stamp">último preço ${brl(pr.price)} em ${dayLabel(pr.priceAt || pr.updatedAt)}</div>` : ""}`}
+               : `<div class="cprice nf">sem preço hoje</div>${pr && pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)} em ${dayLabel(pr.priceAt || pr.updatedAt)}</div>` : ""}
+                  ${pr && pr.price > 0 ? `<button class="same-btn" data-same="${p.id}">✓ Mesmo preço</button>` : ""}`}
         </div>
         <button class="icon-btn" style="color:var(--primary)" data-cam="${p.id}" aria-label="Tirar foto">${IC.camera}</button>
         <button class="icon-btn" style="color:var(--primary)" data-edit="${p.id}" aria-label="Editar preço">${IC.edit}</button>
         ${ok ? `<button class="icon-btn" style="color:var(--red)" data-del="${p.id}" aria-label="Marcar como não encontrado">${IC.del}</button>` : ""}
-      </div>`; }).join("")}</div>
+      </div>`; }).join("")}</div>`
+    : `<div class="empty-state">Nenhum item encontrado ainda no ${esc(c.name)}.<br>Vá em <b>Pesquisa</b>, selecione "${esc(c.name)}" e tire as fotos ou digite os preços.<br>Aqui fica o histórico do que você já encontrou nele.</div>`}
     <button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>`;
-  app.querySelector("#back").onclick = () => { openCompetitorId = null; render(); };
+  app.querySelector("#back").onclick = () => { openCompetitorId = null; selecting = null; render(); };
   app.querySelector("#org").onclick = () => { organizing = { cid: c.id }; render(); window.scrollTo(0, 0); };
-  app.querySelector("#clr").onclick = () => confirmBox("Zerar pesquisa", `Começar do zero a pesquisa de "${c.name}"? Todos os itens ficam como "não encontrado" (vazios no Excel). Os itens continuam na lista e os últimos preços ficam guardados.`, "Zerar", () => {
-    for (const p of S.products) markNotFound(c.id, p);
+  const sb = app.querySelector("#selBtn"); if (sb) sb.onclick = () => { selecting = new Set(); render(); window.scrollTo(0, 0); };
+  app.querySelector("#clr").onclick = () => confirmBox("Zerar pesquisa", `Começar do zero a pesquisa de "${c.name}"? Todos os itens ficam "sem preço hoje" (vazios no Excel). O histórico e os últimos preços ficam guardados.`, "Zerar", () => {
+    for (const p of hist) markNotFound(c.id, p);
     save(); render(); toast("Pesquisa zerada");
   });
   fillThumbs(app);
   app.querySelector("#exp").onclick = () => exportDialog(o => xlsxOne(c, o), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`, missingCount([c.id]));
   app.onclick = e => {
-    const b = e.target.closest("button[data-edit],button[data-del],button[data-view],button[data-cam]"); if (!b) return;
-    const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.del || b.dataset.view || b.dataset.cam)); if (!prod) return;
+    const b = e.target.closest("button[data-edit],button[data-del],button[data-view],button[data-cam],button[data-same]"); if (!b) return;
+    const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.del || b.dataset.view || b.dataset.cam || b.dataset.same)); if (!prod) return;
+    if (b.dataset.same) { const v = confirmSame(c.id, prod); save(); render(); return toast(`✓ ${prod.name}: mesmo preço ${brl(v)}`); }
     if (b.dataset.view) return photoViewer(photoKey(c.id, prod.id), prod.name);
     if (b.dataset.cam) return openCamera(prod, c.id);
     if (b.dataset.edit) return priceDialog(prod.name, dayPrice(c.id, prod), price => { setPrice(c.id, prod, price, false); save(); render(); });
-    if (b.dataset.del) {   // tirar o preço do dia = "não encontrado" (o último preço fica guardado)
-      confirmBox("Não encontrado", `Marcar "${prod.name}" como não encontrado nesta pesquisa? Fica vazio no Excel; o último preço fica guardado.`, "Marcar", () => {
+    if (b.dataset.del) {   // tirar o preço do dia = "sem preço hoje" (o último preço fica guardado)
+      confirmBox("Sem preço hoje", `Marcar "${prod.name}" como não encontrado nesta pesquisa? Fica vazio no Excel; o último preço fica guardado.`, "Marcar", () => {
         markNotFound(c.id, prod); save(); render();
       });
     }
   };
+}
+
+/* modo "selecionar vários": marca os itens que continuam com o mesmo preço e confirma de uma vez */
+function renderSelect(c, sameable){
+  if (!sameable.length) { selecting = null; return render(); }
+  const n = () => selecting.size;
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" style="color:var(--primary)" id="cancelSel" aria-label="Voltar">${IC.back}</button>
+      <h1>Mesmo preço · ${esc(c.name)}</h1>
+    </div>
+    <p class="hint" style="margin:0 0 8px">Marque os itens que estão com o <b>mesmo preço da última vez</b> e toque em <b>Confirmar</b>.</p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-white" id="all">Marcar todos (${sameable.length})</button>
+      <button class="btn btn-white" id="none">Desmarcar</button>
+    </div>
+    <div class="list" id="slist" style="margin-top:0;padding-bottom:90px">${sameable.map(p => {
+      const pr = priceFor(c.id, p);
+      return `<label class="card selrow"><input type="checkbox" data-chk="${p.id}" ${selecting.has(p.id) ? "checked" : ""}>
+        <span style="flex:1;min-width:0"><span class="pname" style="font-size:15px;display:block;margin:0 0 2px">${esc(p.name)}</span>
+        <span class="stamp">último: <b style="color:var(--primary)">${brl(pr.price)}</b> em ${dayLabel(pr.priceAt || pr.updatedAt)}</span></span></label>`; }).join("")}</div>
+    <div class="selbar">
+      <button class="btn btn-ghost" id="cancelSel2">Cancelar</button>
+      <button class="btn btn-orange" id="okSel" style="flex:2">✓ Confirmar mesmo preço (<span id="cnt">${n()}</span>)</button>
+    </div>`;
+  const upd = () => { app.querySelector("#cnt").textContent = n(); app.querySelector("#okSel").disabled = !n(); };
+  const exit = () => { selecting = null; render(); window.scrollTo(0, 0); };
+  app.querySelector("#cancelSel").onclick = exit; app.querySelector("#cancelSel2").onclick = exit;
+  app.querySelector("#all").onclick = () => { sameable.forEach(p => selecting.add(p.id)); app.querySelectorAll("[data-chk]").forEach(x => x.checked = true); upd(); };
+  app.querySelector("#none").onclick = () => { selecting.clear(); app.querySelectorAll("[data-chk]").forEach(x => x.checked = false); upd(); };
+  app.querySelector("#slist").onchange = e => { const x = e.target.closest("[data-chk]"); if (!x) return; x.checked ? selecting.add(+x.dataset.chk) : selecting.delete(+x.dataset.chk); upd(); };
+  app.querySelector("#okSel").onclick = () => {
+    let k = 0;
+    for (const id of selecting) { const p = S.products.find(x => x.id === id); if (p && confirmSame(c.id, p)) k++; }
+    save(); selecting = null; render(); window.scrollTo(0, 0);
+    toast(`✓ ${k} ite${k === 1 ? "m confirmado" : "ns confirmados"} com o mesmo preço`);
+  };
+  upd();
 }
 
 /* ---------- organizar a ordem dos itens: geral (cid = null) ou de um concorrente ---------- */
@@ -1691,7 +1760,7 @@ function offerLegacy(){
   });
 }
 
-window.addEventListener("hashchange", () => { if (!USER) return userScreen(); openCompetitorId = null; organizing = false; app.onclick = null; render(); window.scrollTo(0,0); });
+window.addEventListener("hashchange", () => { if (!USER) return userScreen(); openCompetitorId = null; organizing = false; selecting = null; app.onclick = null; render(); window.scrollTo(0,0); });
 (function boot(){
   const u = lsGet(USER_KEY);
   if (u) enterUser(u); else userScreen();
