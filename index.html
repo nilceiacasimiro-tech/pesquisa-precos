@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#003399">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-aestbhW2vVG1wyhARJ13ByBeXvftX6o5TFT7pDkEKSQ=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
 <title>DScanner – Pesquisa de Preço</title>
 <style>
   :root{
@@ -131,6 +133,8 @@
   .ordbox.ordc{background:var(--primary-soft);border-color:#C9D6EF}
   .pline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
   .pline .price{margin-top:0;text-align:right}
+  .clear-btn{background:#FDECEC;color:var(--red);border:1px solid #F5C2C2;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
+  .undo-btn{background:var(--primary-soft);color:var(--primary);border:1px solid #C9D6EF;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;margin-top:6px}
   .same-btn{background:#E8F5E9;color:var(--ok);border:1px solid #C8E6C9;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;margin-top:6px}
   .same-btn:active{background:#C8E6C9}
   .selrow{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer}
@@ -165,9 +169,9 @@
 
 const DEFAULT_PRODUCTS = [{"name": "ARROZ SEPE T1 5KG", "barCode": "7896009865657"}, {"name": "ARROZ SEPE PARB T1 5KG", "barCode": "7896009867293"}, {"name": "ARROZ SEPE PREMIUM T1 5KG", "barCode": "7896009866944"}, {"name": "ARROZ PURO GRÃO BCO T1 5KG", "barCode": "7897297900112"}, {"name": "ARROZ SABOROSO CAAL T1 5KG", "barCode": "7898295150189"}, {"name": "ARROZ ALEGRE T1 5KG", "barCode": "7898295155207"}, {"name": "ARROZ RAMPINELLI BCO LF 5KG", "barCode": "7896546112252"}, {"name": "ARROZ RAMPINELLI PARB 5KG", "barCode": "7896546110050"}, {"name": "ARROZ DONO DA CASA T1 5KG", "barCode": "7896641000317"}, {"name": "ARROZ SEPE BCO T1 1KG", "barCode": "7896009863547"}, {"name": "ARROZ SEPE T1 2KG", "barCode": "7896009863752"}, {"name": "ARROZ SEPE PARB T1 1KG", "barCode": "7896009866050"}, {"name": "ARROZ RAMPINELLI BCO T1 1KG", "barCode": "7896546112214"}, {"name": "ARROZ RAMPINELLI PARB T1 1KG", "barCode": "7896546110012"}, {"name": "ARROZ CALAFATE T1 1KG", "barCode": "7896010355062"}, {"name": "FEIJÃO PRETO COMBRASIL 1KG", "barCode": "7896101062015"}, {"name": "FEIJÃO PRETO ANA PLUS T1 1KG", "barCode": "7898063330072"}, {"name": "FEIJÃO PRETO RIO DOCE 1KG", "barCode": "7897095900758"}, {"name": "FEIJÃO PRETO JUJU T1 1KG", "barCode": "7896517400036"}, {"name": "FEIJÃO PRETO NORTE T1 1KG", "barCode": "7898052521160"}, {"name": "FEIJÃO PRETO NICO T1 1KG", "barCode": "7897769200108"}, {"name": "FEIJÃO PRETO LÍVIA T1 1KG", "barCode": "7897769200320"}, {"name": "FEIJÃO CARIOCA COMBRASIL 1KG", "barCode": "7896101062022"}, {"name": "FEIJÃO CARIOCA ANA PLUS T1 1KG", "barCode": "7898063330041"}, {"name": "FEIJÃO CARIOCA JUJU T1 1KG", "barCode": "7896517400302"}, {"name": "FEIJÃO CARIOCA NORTE T1 1KG", "barCode": "7898052521016"}, {"name": "FEIJÃO CARIOCA NICO T1 1KG", "barCode": "7897769200184"}, {"name": "FEIJÃO CARIOCA LÍVIA T1 1KG", "barCode": "7897769200290"}, {"name": "AÇÚCAR CRISTAL ALCON 5KG", "barCode": "7898996103330"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 5KG", "barCode": "7898187830052"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 5KG", "barCode": "7896894900082"}, {"name": "AÇÚCAR CRISTAL COAGRO 5KG", "barCode": "7898903106010"}, {"name": "AÇÚCAR CRISTAL ALCON 2KG", "barCode": "7898996103323"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 2KG", "barCode": "7898187830021"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 2KG", "barCode": "7896894900075"}, {"name": "AÇÚCAR CRISTAL COAGRO 2KG", "barCode": "7898903106027"}, {"name": "ÓLEO DE SOJA LIZA PET 900ML", "barCode": "7896036090244"}, {"name": "ÓLEO DE SOJA ABC PET 900ML", "barCode": "7896242200048"}, {"name": "ÓLEO DE SOJA SOYA PET 900ML", "barCode": "7891080801204"}, {"name": "ÓLEO DE SOJA COAMO PET 900ML", "barCode": "7896279600538"}, {"name": "ÓLEO DE SOJA VITALIV PET 900ML", "barCode": "7898247780297"}, {"name": "LEITE LONGA VIDA INT CAPEL 1L", "barCode": "7898360430215"}, {"name": "LEITE LONGA VIDA INT DAMARE 1L", "barCode": "7898945133203"}, {"name": "LEITE LONGA VIDA INT ITALAC 1L", "barCode": "7898080640611"}, {"name": "LEITE LONGA VIDA INT PIRACANJUBA 1L", "barCode": "7898215151708"}, {"name": "LEITE LONGA VIDA INT PORTO ALEGRE 1L", "barCode": "7896122305207"}, {"name": "LEITE LONGA VIDA INT SELITA 1L", "barCode": "7896484411509"}, {"name": "CAFÉ 3 CORAÇÕES ALMOF 250G EXTRA FORTE", "barCode": "7896005801512"}, {"name": "CAFÉ FORT POUCH 250G TORRADO E MOÍDO", "barCode": "7896005800539"}, {"name": "CAFÉ NÚMERO UM ALMOF 250G TRADICIONAL", "barCode": "7896212700011"}, {"name": "CAFÉ CAFUSO ALMOF 250G TRADICIONAL", "barCode": "7896298600113"}, {"name": "CAFÉ PILÃO VACUO PURO 250G TRADICIONAL", "barCode": "7896089012637"}, {"name": "CAFÉ MERIDIANO ALMOF 250G EXTRA FORTE", "barCode": "7896246700162"}, {"name": "CAFÉ MERIDIANO ALMOF 250G TRADICIONAL", "barCode": "7896246700025"}, {"name": "CAFÉ GRÃO DA ROÇA ALMOF 250G TRADICIONAL", "barCode": "7898287600029"}, {"name": "CAFÉ GLÓRIA ALMOF 250G EXTRA FORTE", "barCode": "7898908355192"}, {"name": "CAFÉ DAMARE ALMOF 250G TRADICIONAL", "barCode": "7898945133012"}, {"name": "CAFÉ MELITTA POUCH 250G TRADICIONAL", "barCode": "7891021006088"}, {"name": "FARINHA TRIGO ADRIA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO ESP PALOMA 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM 5KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM FERM 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM POLI 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA 5KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA INTEGRAL 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA SEMOLADA 25KG", "barCode": ""}, {"name": "FARINHA TRIGO TRES COROAS T1 1KG", "barCode": ""}, {"name": "LEITE LV INT BH 1L", "barCode": ""}, {"name": "ARROZ CATARINAO BCO T1 5KG", "barCode": ""}, {"name": "ARROZ DONA MILU T1 5KG", "barCode": ""}, {"name": "ARROZ PURO GRAO BCO T1 1KG", "barCode": ""}, {"name": "ARROZ SEPE PREMIUM T1 1KG", "barCode": ""}, {"name": "OLEO SOJA ABC PET 900ML", "barCode": ""}];
 /* Banco de dados na internet (Supabase). Vazio = só neste aparelho. */
-const SUPABASE_URL = "";
-const SUPABASE_KEY = "";
-const CLOUD = /^https?:\/\//.test(SUPABASE_URL) && SUPABASE_KEY.length > 20;
+const SUPABASE_URL = "https://jyonibfzegkcsyjjtfao.supabase.co";
+const SUPABASE_KEY = "sb_publishable_lrEcO7ApEjSeYBijjGTLnA_QCtSuZDG";
+const CLOUD = (/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(SUPABASE_URL)) && /^[A-Za-z0-9._-]{20,}$/.test(SUPABASE_KEY);
 
 /* ---------- ícones ---------- */
 const IC = {
@@ -184,9 +188,10 @@ const IC = {
 
 /* ---------- armazenamento (por usuário: no aparelho + na nuvem) ---------- */
 const USER_KEY = "dscanner-usuario", USERS_KEY = "dscanner-usuarios", LEGACY_KEY = "dscanner-web-v1";
-let USER = null;
+let USER = null;   // nome (sem nuvem) ou e-mail (com login)
+let UKEY = null;   // chave interna do usuário: nome simplificado (sem nuvem) ou id da conta (com login)
 const slug = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "usuario";
-const stateKey = () => "dscanner-dados:" + slug(USER);
+const stateKey = () => "dscanner-dados:" + UKEY;
 const pendKey = () => stateKey() + ":pendente";
 const lsGet = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
@@ -199,14 +204,44 @@ function blankState(){
     competitors: [], prices: [], selectedCompetitorId: null, photos: {}, links: [], aliases: [], pending: []
   };
 }
+/* Validação de tudo que entra (backup, nuvem, dados do aparelho): só passam campos esperados, nos tipos certos */
+const isId = x => Number.isInteger(+x) && +x > 0 && +x < 1e12;
+const arr = v => Array.isArray(v) ? v : [];
+const obj = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+const num = v => (typeof v === "number" || typeof v === "string") && Number.isFinite(+v) ? +v : null;
+const cleanText = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+const digits = v => String(v ?? "").replace(/\D/g, "").slice(0, 14);
+const money = v => { const n = num(v); return n !== null && n > 0 && n < 1e6 ? Math.round(n * 100) / 100 : null; };
+function uniqById(list){ const seen = new Set(); return list.filter(x => !seen.has(x.id) && seen.add(x.id)); }
 function normalizeState(s){
-  s = s && typeof s === "object" ? s : blankState();
-  if (!Array.isArray(s.products)) s.products = blankState().products;
-  s.competitors = s.competitors || []; s.prices = s.prices || []; s.photos = s.photos || {};
-  s.links = s.links || []; s.aliases = (s.aliases || []).filter(a => a.ean); s.pending = s.pending || []; s.orders = s.orders || {};
-  const maxId = Math.max(0, ...s.products.map(x => x.id), ...s.competitors.map(x => x.id), ...s.prices.map(x => x.id));
-  if (!(s.nextId > maxId)) s.nextId = maxId + 1;
-  return s;
+  s = obj(s);
+  const prodsIn = Array.isArray(s.products) ? s.products : blankState().products;
+  const out = {};
+  out.products = uniqById(prodsIn.filter(p => p && isId(p.id)).slice(0, 5000)
+    .map(p => ({ id: +p.id, name: cleanText(p.name, 120).toUpperCase() || "ITEM SEM NOME", barCode: digits(p.barCode) })));
+  out.competitors = uniqById(arr(s.competitors).filter(c => c && isId(c.id)).slice(0, 300)
+    .map(c => ({ id: +c.id, name: cleanText(c.name, 80) || "Concorrente" })));
+  out.prices = uniqById(arr(s.prices).filter(p => p && isId(p.id) && isId(p.competitorId)).slice(0, 200000)
+    .map(p => ({ id: +p.id, competitorId: +p.competitorId, productId: isId(p.productId) ? +p.productId : null,
+      name: cleanText(p.name, 120), barCode: digits(p.barCode), price: money(p.price), price2: null,
+      check: p.check === true, notFound: p.notFound === true, updatedAt: num(p.updatedAt) || 0, priceAt: num(p.priceAt) || null, clearedFrom: num(p.clearedFrom) || undefined })));
+  out.selectedCompetitorId = isId(s.selectedCompetitorId) ? +s.selectedCompetitorId : null;
+  out.photos = {};
+  for (const [k, v] of Object.entries(obj(s.photos))) if (/^\d{1,12}:\d{1,12}$/.test(k) && num(v)) out.photos[k] = num(v);
+  out.links = arr(s.links).filter(l => l && isId(l.cid) && isId(l.pid) && Array.isArray(l.toks)).slice(-5000)
+    .map(l => ({ cid: +l.cid, pid: +l.pid, toks: l.toks.filter(x => typeof x === "string").map(x => x.replace(/[^a-z0-9.]/g, "").slice(0, 40)).filter(Boolean).slice(0, 60), at: num(l.at) || 0 }));
+  out.aliases = arr(s.aliases).filter(a => a && /^\d{8,14}$/.test(String(a.ean)) && isId(a.productId)).slice(-3000)
+    .map(a => ({ cid: isId(a.cid) ? +a.cid : null, ean: String(a.ean), toks: [], productId: +a.productId }));
+  out.pending = arr(s.pending).filter(p => p && isId(p.id) && isId(p.cid)).slice(-500)
+    .map(p => ({ id: +p.id, cid: +p.cid, at: num(p.at) || 0, price: money(p.price), text: String(p.text ?? "").slice(0, 4000),
+      ean: /^\d{8,14}$/.test(String(p.ean)) ? String(p.ean) : null, darkUnread: p.darkUnread === true,
+      guess: isId(p.guess) ? +p.guess : null, motivo: p.motivo === "preço" ? "preço" : "item" }));
+  out.orders = {};
+  for (const [k, v] of Object.entries(obj(s.orders))) if (/^\d{1,12}$/.test(k) && Array.isArray(v)) out.orders[k] = v.filter(isId).map(Number);
+  out.savedAt = num(s.savedAt) || 0;
+  const maxId = Math.max(0, ...out.products.map(x => x.id), ...out.competitors.map(x => x.id), ...out.prices.map(x => x.id), ...out.pending.map(x => x.id));
+  out.nextId = isId(s.nextId) && +s.nextId > maxId ? +s.nextId : maxId + 1;
+  return out;
 }
 function loadLocal(){
   const raw = lsGet(stateKey());
@@ -222,13 +257,14 @@ function save(){
   if (CLOUD) { lsSet(pendKey(), "1"); clearTimeout(pushTimer); pushTimer = setTimeout(push, 800); setSync("wait"); }
 }
 async function push(){
-  if (!CLOUD || !USER || pushing) return;
+  if (!CLOUD || !USER || !SESSION || pushing) return;
   pushing = true;
   try {
     await retryPhotos();
     await Cloud.save(USER, S);
     lsDel(pendKey()); setSync("ok");
   } catch(e) {
+    if (e && e.expired) { setSync("off"); sessionExpired(); return; }
     setSync("off"); clearTimeout(pushTimer); pushTimer = setTimeout(push, 20000);
   } finally { pushing = false; }
 }
@@ -241,41 +277,114 @@ function setSync(st){
 }
 const newId = () => S.nextId++;
 
-/* ---------- nuvem (Supabase) ---------- */
-function hdr(extra){
-  const h = { apikey: SUPABASE_KEY, ...(extra || {}) };
-  if (!SUPABASE_KEY.startsWith("sb_")) h.Authorization = "Bearer " + SUPABASE_KEY;
-  return h;
+/* ---------- nuvem (Supabase) com login por e-mail e senha ---------- */
+const SESSION_KEY = "dscanner-sessao";
+let SESSION = null;   // { access_token, refresh_token, expires_at, user: { id, email } }
+const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
+function authMessage(status, j){
+  const code = String((j && (j.error_code || j.error || j.code)) || "");
+  if (status === 429) return "Muitas tentativas. Espere alguns minutos e tente de novo.";
+  if (status === 400 && /invalid|grant|credentials/i.test(code + " " + (j && (j.msg || j.error_description) || ""))) return "E-mail ou senha incorretos.";
+  if (status === 422 || /weak|password/i.test(code)) return "Senha fraca: use pelo menos 8 caracteres, com letras e números.";
+  return "Não foi possível entrar agora. Tente de novo.";
 }
-const Cloud = {
-  async users(){
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/estado?select=usuario&order=usuario`, { headers: hdr() });
-    if (!r.ok) throw new Error("users " + r.status); return (await r.json()).map(x => x.usuario);
+const Auth = {
+  load(){
+    try { const s = JSON.parse(lsGet(SESSION_KEY) || "null");
+      if (s && typeof s.refresh_token === "string" && s.user && isUuid(s.user.id)) SESSION = s; } catch(e) {}
+    return SESSION;
   },
-  async load(u){
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/estado?select=dados,atualizado&usuario=eq.${encodeURIComponent(u)}`, { headers: hdr() });
+  store(j){
+    if (!j || !j.access_token || !j.user || !isUuid(j.user.id)) throw new Error("resposta inválida");
+    SESSION = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (num(j.expires_in) || 3600) * 1000,
+      user: { id: j.user.id, email: cleanText(j.user.email, 120) } };
+    lsSet(SESSION_KEY, JSON.stringify(SESSION));
+  },
+  async post(path, body, token){
+    const h = { apikey: SUPABASE_KEY, "Content-Type": "application/json" };
+    if (token) h.Authorization = "Bearer " + token;
+    const r = await fetch(SUPABASE_URL + path, { method: "POST", headers: h, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    return { r, j };
+  },
+  async signIn(email, password){
+    const { r, j } = await Auth.post("/auth/v1/token?grant_type=password", { email, password });
+    if (!r.ok) throw new Error(authMessage(r.status, j));
+    Auth.store(j);
+  },
+  _ref: null,
+  refresh(){
+    if (!Auth._ref) Auth._ref = (async () => {
+      if (!SESSION) throw Object.assign(new Error("sem sessão"), { expired: true });
+      const { r, j } = await Auth.post("/auth/v1/token?grant_type=refresh_token", { refresh_token: SESSION.refresh_token });
+      if (!r.ok) throw Object.assign(new Error("sessão expirada"), { expired: r.status === 400 || r.status === 401 });
+      Auth.store(j);
+    })().finally(() => { Auth._ref = null; });
+    return Auth._ref;
+  },
+  async token(){
+    if (!SESSION) throw Object.assign(new Error("sem sessão"), { expired: true });
+    if (Date.now() > SESSION.expires_at - 60000) await Auth.refresh();
+    return SESSION.access_token;
+  },
+  async recover(email){
+    const back = location.origin + location.pathname;
+    await Auth.post("/auth/v1/recover?redirect_to=" + encodeURIComponent(back), { email });
+  },
+  async setPassword(password){
+    const r = await fetch(SUPABASE_URL + "/auth/v1/user", { method: "PUT",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + await Auth.token(), "Content-Type": "application/json" },
+      body: JSON.stringify({ password }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(authMessage(r.status, j));
+  },
+  async userFromToken(access_token){
+    const r = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + access_token } });
+    if (!r.ok) throw new Error("link inválido ou vencido");
+    return r.json();
+  },
+  async signOut(){
+    try { if (SESSION) await Auth.post("/auth/v1/logout", {}, SESSION.access_token); } catch(e) {}
+    SESSION = null; lsDel(SESSION_KEY);
+  }
+};
+const Cloud = {
+  async req(path, opt, retry){
+    opt = opt || {};
+    const h = { apikey: SUPABASE_KEY, Authorization: "Bearer " + await Auth.token(), ...(opt.headers || {}) };
+    const r = await fetch(SUPABASE_URL + path, { ...opt, headers: h });
+    if (r.status === 401 && retry !== false) { await Auth.refresh(); return Cloud.req(path, opt, false); }
+    return r;
+  },
+  async load(){
+    const r = await Cloud.req(`/rest/v1/pesquisa?select=dados,atualizado&user_id=eq.${UKEY}`);
     if (!r.ok) throw new Error("load " + r.status); const j = await r.json(); return j[0] || null;
   },
-  async save(u, dados){
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/estado?on_conflict=usuario`, { method: "POST",
-      headers: hdr({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
-      body: JSON.stringify({ usuario: u, dados, atualizado: new Date().toISOString() }) });
+  async save(_u, dados){
+    const r = await Cloud.req(`/rest/v1/pesquisa?on_conflict=user_id`, { method: "POST",
+      headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ user_id: UKEY, email: USER, dados, atualizado: new Date().toISOString() }) });
     if (!r.ok) throw new Error("save " + r.status);
   },
-  path: (u, k) => `${slug(u)}/${k.replace(":", "_")}.jpg`,
-  async putPhoto(u, k, blob){
-    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/fotos/${Cloud.path(u, k)}`, { method: "POST",
-      headers: hdr({ "Content-Type": "image/jpeg", "x-upsert": "true", "cache-control": "max-age=3600" }), body: blob });
+  path: k => `${UKEY}/${k.replace(":", "_")}.jpg`,
+  async putPhoto(_u, k, blob){
+    const r = await Cloud.req(`/storage/v1/object/fotos/${Cloud.path(k)}`, { method: "POST",
+      headers: { "Content-Type": "image/jpeg", "x-upsert": "true", "cache-control": "max-age=3600" }, body: blob });
     if (!r.ok) throw new Error("foto " + r.status);
   },
-  async delPhoto(u, k){
-    try { await fetch(`${SUPABASE_URL}/storage/v1/object/fotos`, { method: "DELETE",
-      headers: hdr({ "Content-Type": "application/json" }), body: JSON.stringify({ prefixes: [Cloud.path(u, k)] }) }); } catch(e) {}
+  async delPhoto(_u, k){
+    try { await Cloud.req(`/storage/v1/object/fotos`, { method: "DELETE",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: [Cloud.path(k)] }) }); } catch(e) {}
   },
-  url: (u, k, stamp) => `${SUPABASE_URL}/storage/v1/object/public/fotos/${Cloud.path(u, k)}?v=${stamp || 0}`
+  async getPhoto(k){   // fotos são privadas: só o dono baixa, com o login dele
+    const r = await Cloud.req(`/storage/v1/object/authenticated/fotos/${Cloud.path(k)}`);
+    if (!r.ok) throw new Error("foto " + r.status);
+    const b = await r.blob(); if (!/^image\//.test(b.type || "image/jpeg")) throw new Error("não é imagem");
+    return b;
+  }
 };
 /* fotos que não subiram (sem internet) ficam numa fila e sobem depois */
-const photoQKey = () => "dscanner-fotos-pendentes:" + slug(USER);
+const photoQKey = () => "dscanner-fotos-pendentes:" + UKEY;
 function queuePhoto(k){ const q = JSON.parse(lsGet(photoQKey()) || "[]"); if (!q.includes(k)) q.push(k); lsSet(photoQKey(), JSON.stringify(q)); }
 async function uploadPhoto(k, blob){
   if (!CLOUD) return;
@@ -315,23 +424,24 @@ function researchDay(cid){
   let m = 0; for (const p of S.prices) if (p.competitorId === cid && p.updatedAt > m) m = p.updatedAt;
   return m || null;
 }
-/* preço válido = atualizado no dia da última pesquisa daquele concorrente (e não marcado como "não encontrado") */
-function dayPrice(cid, prod, rd){
-  rd = rd === undefined ? researchDay(cid) : rd;
-  const p = priceFor(cid, prod);
-  return p && !p.notFound && p.price > 0 && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd) ? p : null;
-}
-/* "mesmo preço": confirma hoje o último preço guardado */
+/* REGRA: o último preço continua valendo (mesmo sem mexer), até você tocar em "Limpar preço" */
+function effPrice(cid, prod){ const p = priceFor(cid, prod); return p && !p.notFound && p.price > 0 ? p : null; }
+const checkedOn = (p, rd) => !!(p && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd));   // mexido no dia da pesquisa
 function lastPrice(cid, prod){ const x = priceFor(cid, prod); return x && x.price > 0 ? x.price : null; }
-function confirmSame(cid, prod){ const v = lastPrice(cid, prod); if (v) setPrice(cid, prod, v, false); return v; }
 /* histórico do concorrente: itens que já tiveram preço ou foto nele */
 const inHistory = (cid, p) => !!(lastPrice(cid, p) || S.photos[photoKey(cid, p.id)]);
-/* marca como não encontrado no dia, mas guarda o último preço */
-function markNotFound(cid, prod){
+/* "Limpar preço": não tinha na loja. O último preço fica guardado (dá para desfazer) */
+function clearPrice(cid, prod){
   const ex = priceFor(cid, prod), now = Date.now();
-  if (ex) { if (!ex.notFound) ex.priceAt = ex.priceAt || ex.updatedAt; ex.notFound = true; ex.check = false; ex.updatedAt = now; }
+  if (ex) { if (!ex.notFound) { ex.clearedFrom = ex.updatedAt; ex.priceAt = ex.priceAt || ex.updatedAt; } ex.notFound = true; ex.check = false; ex.updatedAt = now; }
   else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price: null, notFound: true, updatedAt: now });
 }
+function undoClear(cid, prod){
+  const ex = priceFor(cid, prod); if (!ex || !ex.notFound) return false;
+  ex.notFound = false; ex.updatedAt = ex.clearedFrom || ex.priceAt || ex.updatedAt; delete ex.clearedFrom;
+  return ex.price > 0;
+}
+const markNotFound = clearPrice;
 /* ordem dos itens: cada concorrente pode ter a sua; sem ordem própria = ordem geral */
 function productsFor(cid){
   const ord = cid && S.orders[cid];
@@ -428,26 +538,20 @@ function makeXlsx(sheetName, rows, widths){
     ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet ${NS}><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData></worksheet>`]
   ]);
 }
-/* opt.fill: "vazio" = sem preço no dia fica em branco; "ultimo" = usa o último preço guardado */
-function cellPrice(cid, p, rd, fill){
-  const d = dayPrice(cid, p, rd); if (d) return d.price;
-  if (fill === "ultimo") { const x = priceFor(cid, p); if (x && x.price > 0) return x.price; }
-  return "";
-}
+/* no Excel: o preço que vale (último guardado); vazio = preço limpo ou nunca encontrado */
+function cellPrice(cid, p){ const d = effPrice(cid, p); return d ? d.price : ""; }
 function xlsxAll(opt){
-  const fill = (opt && opt.fill) || "vazio";
   const comps = [...S.competitors].sort(byName).map(c => ({ c, rd: researchDay(c.id) }));
   const rows = [["Grupo", "Produto", "Código de Barras", ...comps.map(x => x.c.name + (x.rd ? " (" + dayLabel(x.rd) + ")" : ""))]];
-  for (const p of groupedProducts()) rows.push([groupLabel(p.name), p.name, p.barCode, ...comps.map(x => cellPrice(x.c.id, p, x.rd, fill))]);
+  for (const p of groupedProducts()) rows.push([groupLabel(p.name), p.name, p.barCode, ...comps.map(x => cellPrice(x.c.id, p))]);
   return makeXlsx("Pesquisa de Preços", rows, [14, 52, 18, ...comps.map(() => 20)]);
 }
 function xlsxOne(c, opt){
-  const fill = (opt && opt.fill) || "vazio";
   const rd = researchDay(c.id);
   const rows = [["Grupo", "Nome", "Código de Barras", "Preço" + (rd ? " (" + dayLabel(rd) + ")" : ""), "Situação"]];
   for (const p of groupedProducts()) {
-    const d = dayPrice(c.id, p, rd), v = cellPrice(c.id, p, rd, fill);
-    rows.push([groupLabel(p.name), p.name, p.barCode, v, d ? "encontrado" : (v !== "" ? "não encontrado (último preço)" : "não encontrado")]);
+    const v = cellPrice(c.id, p);
+    rows.push([groupLabel(p.name), p.name, p.barCode, v, v !== "" ? "encontrado" : "não encontrado"]);
   }
   return makeXlsx("Produtos", rows, [14, 52, 18, 16, 26]);
 }
@@ -502,9 +606,9 @@ const PhotoDB = (() => {
     });
   }
   return {
-    put: (k, blob) => run("readwrite", s => s.put(blob, slug(USER) + "|" + k)),
-    get: k => run("readonly", s => s.get(slug(USER) + "|" + k)),
-    del: k => run("readwrite", s => s.delete(slug(USER) + "|" + k)).catch(() => {}),
+    put: (k, blob) => run("readwrite", s => s.put(blob, UKEY + "|" + k)),
+    get: k => run("readonly", s => s.get(UKEY + "|" + k)),
+    del: k => run("readwrite", s => s.delete(UKEY + "|" + k)).catch(() => {}),
     getRaw: k => run("readonly", s => s.get(k)),
   };
 })();
@@ -520,7 +624,13 @@ async function photoURL(key){
       const url = URL.createObjectURL(blob); urlCache.set(key, { stamp, url }); return url;
     }
   } catch(e) {}
-  return CLOUD ? Cloud.url(USER, key, stamp) : null;   // foto tirada em outro aparelho
+  if (!CLOUD) return null;
+  try {   // foto tirada em outro aparelho: baixa (com o login) e guarda no aparelho
+    const blob = await Cloud.getPhoto(key);
+    try { await PhotoDB.put(key, blob); } catch(e) {}
+    if (c) URL.revokeObjectURL(c.url);
+    const url = URL.createObjectURL(blob); urlCache.set(key, { stamp, url }); return url;
+  } catch(e) { return null; }
 }
 function fillThumbs(root){
   root.querySelectorAll("img[data-photo]").forEach(async img => {
@@ -824,6 +934,14 @@ function priceDialog(title, initial, onSave){
 }
 
 /* ---------- câmera e galeria ---------- */
+const MAX_PHOTO_MB = 25, MAX_BATCH = 60;
+function acceptImages(files){
+  const ok = [], bad = [];
+  for (const f of files) (f && /^image\//.test(f.type || "image/") && f.size > 0 && f.size <= MAX_PHOTO_MB * 1048576 ? ok : bad).push(f);
+  if (bad.length) toast(`${bad.length} arquivo(s) ignorado(s): só fotos de até ${MAX_PHOTO_MB} MB`);
+  if (ok.length > MAX_BATCH) { toast(`Máximo de ${MAX_BATCH} fotos por vez`); return ok.slice(0, MAX_BATCH); }
+  return ok;
+}
 const cam = document.getElementById("cam"), gal = document.getElementById("gal");
 let camTarget = null, camCid = null;   // produto fixo (foto de um item) ou null (modo rápido)
 function needCompetitor(cid){
@@ -840,12 +958,12 @@ function openGallery(){
   camCid = cid; gal.value = ""; gal.click();
 }
 cam.addEventListener("change", () => {
-  const f = cam.files[0]; if (!f) return;
+  const f = acceptImages([...cam.files])[0]; if (!f) return;
   if (camTarget) photoDialog(f, camTarget, camCid);
   else { quickAdd([f], camCid); quickNextModal(camCid); }
 });
 gal.addEventListener("change", () => {
-  const fs = [...gal.files]; if (!fs.length) return;
+  const fs = acceptImages([...gal.files]); if (!fs.length) return;
   quickAdd(fs, camCid); toast(`${fs.length} foto(s) na fila de leitura`);
 });
 
@@ -1016,9 +1134,15 @@ function cropAround(img, bc){
 }
 
 /* Lê a etiqueta: código de barras (se tiver) + duas leituras de texto. Devolve texto, menor preço e código */
+let ocrUses = 0;
 async function analyzeTag(file, img, onStatus){
   const bc = await readBarcode(file);
   onStatus("prep");
+  if (ocrUses >= 20 && ocrWorkerP) {   // reinicia o leitor de tempos em tempos (libera memória do celular)
+    const old = ocrWorkerP; ocrWorkerP = null; ocrUses = 0;
+    old.then(w => w.terminate()).catch(() => {});
+  }
+  ocrUses++;
   const worker = await getOCR();
   const src = (bc && await cropAround(img, bc)) || img;
   onStatus(1);
@@ -1095,7 +1219,7 @@ async function commit(ctx, prod, price, check){
   let prevBlob = null; const prevStamp = S.photos[k];
   try {
     if (prevStamp) prevBlob = await PhotoDB.get(k);
-    if (prevStamp && !prevBlob && CLOUD) { const r = await fetch(Cloud.url(USER, k, prevStamp)); if (r.ok) prevBlob = await r.blob(); }
+    if (prevStamp && !prevBlob && CLOUD) prevBlob = await Cloud.getPhoto(k);
   } catch(e) {}
   setPrice(cid, prod, price, check);
   if ((ctx.text || "").trim()) rememberLink(cid, ctx.text, prod.id);
@@ -1204,8 +1328,9 @@ function newCompetitorDialog(){
     m.querySelector("[data-x]").onclick = close;
     m.querySelector("[data-f]").onsubmit = e => {
       e.preventDefault();
-      const name = m.querySelector("[data-n]").value.trim();
+      const name = cleanText(m.querySelector("[data-n]").value, 80);
       if (!name) return;
+      if (S.competitors.some(x => norm(x.name) === norm(name))) return toast("Esse concorrente já existe");
       const c = { id: newId(), name }; S.competitors.push(c); S.selectedCompetitorId = c.id;
       save(); close(); render(); toast(`Concorrente "${name}" criado e selecionado`);
     };
@@ -1228,10 +1353,10 @@ function editProductDialog(prod){
     const b = m.querySelector("[data-b]"); b.oninput = () => { b.value = b.value.replace(/\D/g, ""); };
     m.querySelector("[data-f]").onsubmit = e => {
       e.preventDefault();
-      const name = m.querySelector("[data-n]").value.trim().replace(/\s+/g, " ").toUpperCase();
+      const name = cleanText(m.querySelector("[data-n]").value, 120).toUpperCase();
       if (!name) return toast("O nome não pode ficar vazio");
       if (S.products.some(p => p !== prod && norm(p.name) === norm(name))) return toast("Já existe um item com esse nome");
-      prod.name = name; prod.barCode = b.value.trim();
+      prod.name = name; prod.barCode = digits(b.value);
       for (const x of S.prices) if (x.productId === prod.id) { x.name = name; x.barCode = prod.barCode; }
       save(); close(); render(); toast("Item atualizado");
     };
@@ -1290,10 +1415,10 @@ function newProductDialog(){
     };
     m.querySelector("[data-f]").onsubmit = e => {
       e.preventDefault();
-      const name = n.value.trim().replace(/\s+/g, " ").toUpperCase();
+      const name = cleanText(n.value, 120).toUpperCase();
       if (!name) return;
       if (S.products.some(p => norm(p.name) === norm(name))) { toast("Esse produto já está na lista"); return; }
-      const item = { id: newId(), name, barCode: b.value.trim() };
+      const item = { id: newId(), name, barCode: digits(b.value) };
       const v = pos.value;
       const anchor = +v >= 0 ? S.products[+v] : null;   // item que fica antes do novo
       if (v === "start") S.products.unshift(item);
@@ -1316,27 +1441,18 @@ function barcodeDialog(product){
   m => { m.querySelector("[data-x]").onclick = close; });
 }
 
-function exportDialog(blobFn, filename, missing){
+function exportDialog(blobFn, filename){
   const share = canShareFiles();
   modal(`<h2>Exportar pesquisa de preços</h2>
-    ${missing ? `<p class="sub" style="margin-top:-6px"><b>${missing}</b> ite${missing > 1 ? "ns ficaram" : "m ficou"} sem preço na última pesquisa. No Excel, como quer?</p>
-    <label class="radio"><input type="radio" name="fill" value="vazio" checked> <span><b>Deixar vazio</b> (não tinha na loja)</span></label>
-    <label class="radio"><input type="radio" name="fill" value="ultimo"> <span><b>Usar o último preço</b> guardado</span></label>`
-    : `<p class="sub">Todos os itens têm preço na última pesquisa.</p>`}
+    <p class="sub">Vai para o Excel o último preço de cada item. Ficam vazios só os itens com <b>preço limpo</b> (não tinha na loja) ou que nunca foram encontrados.</p>
     <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button>
       ${share ? `<button class="btn btn-white" data-s>${IC.share} Compartilhar</button>` : ""}
       <button class="btn btn-orange" data-d>${IC.dl} Salvar</button></div>`,
   m => {
-    const opt = () => ({ fill: (m.querySelector('input[name="fill"]:checked') || {}).value || "vazio" });
     m.querySelector("[data-x]").onclick = close;
-    m.querySelector("[data-d]").onclick = () => { const o = opt(); close(); saveFile(blobFn(o), filename); };
-    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { const o = opt(); close(); shareFile(blobFn(o), filename); };
+    m.querySelector("[data-d]").onclick = () => { close(); saveFile(blobFn(), filename); };
+    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { close(); shareFile(blobFn(), filename); };
   });
-}
-function missingCount(cids){
-  let n = 0;
-  for (const cid of cids) { const rd = researchDay(cid); for (const p of S.products) if (!dayPrice(cid, p, rd)) n++; }
-  return n;
 }
 
 /* ---------- telas ---------- */
@@ -1356,7 +1472,7 @@ function renderResearch(){
   const comps = [...S.competitors].sort(byName);
   if (S.selectedCompetitorId && !S.competitors.some(c => c.id === S.selectedCompetitorId)) S.selectedCompetitorId = null;
   app.innerHTML = `
-    <div class="head"><h1>PESQUISA DE PREÇO</h1><button class="user-chip" id="usr">👤 ${esc(USER)}</button></div>
+    <div class="head"><h1>PESQUISA DE PREÇO</h1><button class="user-chip" id="usr">👤 ${esc(String(USER).split("@")[0])}</button></div>
     <div class="field" style="margin-top:12px"><label>Buscar produto</label><input id="q" type="search" placeholder="Nome ou código de barras" value="${esc(query)}"></div>
     <div class="row">
       <button class="btn btn-orange" id="addP">+ Produto</button>
@@ -1397,8 +1513,7 @@ function drawList(){
   if (!items.length) { list.innerHTML = `<div class="empty-state">Nenhum produto encontrado.</div>`; return; }
   list.innerHTML = items.map(p => {
     const pr = cid ? priceFor(cid, p) : null;
-    const old = pr && !dayPrice(cid, p, rdSel);
-    const nf = pr && pr.notFound && rdSel && dayKey(pr.updatedAt) === dayKey(rdSel);
+    const eff = cid ? effPrice(cid, p) : null, today = checkedOn(pr, rdSel), cleared = pr && pr.notFound;
     const k = cid ? photoKey(cid, p.id) : null;
     return `<div class="card">
       <div class="ptop">
@@ -1411,11 +1526,11 @@ function drawList(){
         <button class="btn btn-white grow" data-edit="${p.id}">${IC.edit} Preço</button>
       </div>
       <div class="pline">
-        ${cid && pr && pr.price > 0 && (old || nf) ? `<button class="same-btn" data-same="${p.id}" style="margin:0">✓ Mesmo preço</button>` : "<span></span>"}
-        <div class="price ${pr && !nf && pr.price > 0 && !old ? "" : "empty"}">${
-          nf ? `Não encontrado em ${dayLabel(pr.updatedAt)}${pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div>` : ""}`
-          : pr && pr.price > 0 ? (old ? `Último: ${brl(pr.price)}<div class="stamp">de ${dayLabel(pr.priceAt || pr.updatedAt)}</div>`
-                                      : (pr.check ? `<span class="chk">⚠ conferir</span> ` : "") + "Preço: " + brl(pr.price))
+        ${cid && eff ? `<button class="clear-btn" data-clr="${p.id}">✕ Limpar preço</button>`
+          : cid && cleared && pr.price > 0 ? `<button class="undo-btn" data-undo="${p.id}" style="margin:0">↺ Desfazer</button>` : "<span></span>"}
+        <div class="price ${eff ? "" : "empty"}">${
+          cleared ? `Preço limpo em ${dayLabel(pr.updatedAt)}${pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div>` : ""}`
+          : eff ? (eff.check ? `<span class="chk">⚠ conferir</span> ` : "") + "Preço: " + brl(eff.price) + (today ? "" : `<div class="stamp">mantido de ${dayLabel(eff.priceAt || eff.updatedAt)}</div>`)
           : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
       </div>
     </div>`;
@@ -1423,9 +1538,10 @@ function drawList(){
   fillThumbs(list);
   list.onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
-    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view || b.dataset.same));
+    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view || b.dataset.clr || b.dataset.undo));
     if (!prod) return;
-    if (b.dataset.same) { const v = confirmSame(cid, prod); save(); drawList(); return toast(`✓ ${prod.name}: mesmo preço ${brl(v)}`); }
+    if (b.dataset.clr) { clearPrice(cid, prod); save(); drawList(); return toast(`${prod.name}: preço limpo (não tinha na loja)`); }
+    if (b.dataset.undo) { undoClear(cid, prod); save(); drawList(); return toast(`${prod.name}: preço de volta`); }
     if (b.dataset.bar) return barcodeDialog(prod);
     if (b.dataset.view) return photoViewer(photoKey(cid, prod.id), prod.name);
     if (b.dataset.cam) return openCamera(prod);
@@ -1447,18 +1563,18 @@ function renderCompetitors(){
       <div class="card alt comp">
         <button class="cname" data-open="${c.id}">${esc(c.name)}</button>
         <span class="count">${(() => { const rd = researchDay(c.id); const h = S.products.filter(p => inHistory(c.id, p)).length;
-          const n = rd ? S.products.filter(p => dayPrice(c.id, p, rd)).length : 0;
-          return h ? `${n} de ${h} · ${dayLabel(rd)}` : "sem pesquisa"; })()}</span>
+          const n = S.products.filter(p => effPrice(c.id, p)).length;
+          return h ? `${n} com preço · ${dayLabel(rd)}` : "sem pesquisa"; })()}</span>
         <button class="icon-btn" style="color:var(--red)" data-del="${c.id}" aria-label="Excluir">${IC.del}</button>
       </div>`).join("")}</div>`
     : `<div class="empty-state">Nenhum concorrente cadastrado ainda.</div>`}
     <div class="small-links">
-      <button id="sw">Trocar usuário (${esc(USER)})</button>
+      <button id="sw">${CLOUD ? "Sair da conta" : "Trocar usuário"} (${esc(USER)})</button>
       <button id="bk">Fazer backup dos dados</button>
       <button id="rs">Restaurar backup</button>
     </div>
     <input type="file" id="file" accept=".json,application/json" hidden>`;
-  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, `Pesquisa_de_Precos_${safeName(USER)}.xlsx`, missingCount(S.competitors.map(c => c.id)));
+  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, `Pesquisa_de_Precos_${safeName(USER)}.xlsx`);
   app.querySelector("#sw").onclick = switchUser;
   app.onclick = e => {
     const b = e.target.closest("button"); if (!b) return;
@@ -1482,6 +1598,7 @@ function renderCompetitors(){
   app.querySelector("#rs").onclick = () => file.click();
   file.onchange = async () => {
     const f = file.files[0]; if (!f) return;
+    if (f.size > 20 * 1048576) return toast("Arquivo grande demais para ser um backup");
     try {
       const data = JSON.parse(await f.text());
       if (!Array.isArray(data.products) || !Array.isArray(data.competitors) || !Array.isArray(data.prices)) throw 0;
@@ -1493,100 +1610,100 @@ function renderCompetitors(){
 }
 
 let organizing = false;
-let selecting = null;   // Set com os itens marcados (modo "selecionar vários")
+let selecting = null;   // Set com os itens marcados (modo "limpar vários")
 function renderCompetitor(){
   const c = S.competitors.find(x => x.id === openCompetitorId);
   if (!c) { openCompetitorId = null; organizing = false; selecting = null; return renderCompetitors(); }
   const rd = researchDay(c.id);
   const hist = productsFor(c.id).filter(p => inHistory(c.id, p));
-  const okSet = new Set(hist.filter(p => dayPrice(c.id, p, rd)).map(p => p.id));
-  const sameable = hist.filter(p => !okSet.has(p.id) && lastPrice(c.id, p));
-  if (selecting) return renderSelect(c, sameable);
+  const withPrice = hist.filter(p => effPrice(c.id, p));
+  const nToday = withPrice.filter(p => checkedOn(priceFor(c.id, p), rd)).length;
+  const nKept = withPrice.length - nToday;
+  const nClr = hist.filter(p => { const x = priceFor(c.id, p); return x && x.notFound; }).length;
+  if (selecting) return renderSelect(c, withPrice);
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="back" aria-label="Voltar">${IC.back}</button>
       <h1>${esc(c.name)}</h1>
-      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${hist.length ? "" : "disabled"}>${IC.sweep} Zerar</button>
+      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${withPrice.length ? "" : "disabled"}>${IC.sweep} Limpar todos</button>
     </div>
     <div class="summary">
-      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${okSet.size}</b> encontrado${okSet.size === 1 ? "" : "s"}${sameable.length ? ` · <b style="color:var(--muted)">${sameable.length}</b> ainda sem preço hoje` : ""}` : "Nenhum preço pesquisado ainda."}</div>
+      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${nToday}</b> atualizado${nToday === 1 ? "" : "s"}${nKept ? ` · <b>${nKept}</b> mantido${nKept === 1 ? "" : "s"}` : ""}${nClr ? ` · <b style="color:var(--red)">${nClr}</b> limpo${nClr === 1 ? "" : "s"}` : ""}` : "Nenhum preço pesquisado ainda."}</div>
       <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar${S.orders[c.id] ? "*" : ""}</button>
     </div>
-    ${sameable.length ? `<button class="btn btn-white" id="selBtn" style="width:100%;margin:6px 0 2px">☑ Selecionar vários com o mesmo preço</button>` : ""}
+    <p class="hint" style="margin:6px 2px 0">Sem mexer, o preço <b>continua o mesmo</b>. Use <b>Limpar preço</b> quando não tiver na loja.</p>
+    ${withPrice.length > 1 ? `<button class="btn btn-white" id="selBtn" style="width:100%;margin:8px 0 2px">☑ Limpar preço de vários</button>` : ""}
     ${hist.length ? `<div class="list" id="clist">${hist.map(p => {
-      const pr = priceFor(c.id, p), ok = okSet.has(p.id), k = photoKey(c.id, p.id);
-      return `<div class="card crow ${ok ? "" : "nf"}">
+      const pr = priceFor(c.id, p), eff = effPrice(c.id, p), today = checkedOn(pr, rd), k = photoKey(c.id, p.id);
+      return `<div class="card crow ${eff ? "" : "nf"}">
         ${S.photos[k] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
         <div style="flex:1;min-width:0">
           <p class="pname" style="font-size:15px;margin:2px 0 4px">${esc(p.name)}</p>
-          ${ok ? `<div class="cprice">${pr.check ? `<span class="chk">⚠ conferir</span> ` : ""}${brl(pr.price)}</div>`
-               : `<div class="cprice nf">sem preço hoje</div>${pr && pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)} em ${dayLabel(pr.priceAt || pr.updatedAt)}</div>` : ""}
-                  ${pr && pr.price > 0 ? `<button class="same-btn" data-same="${p.id}">✓ Mesmo preço</button>` : ""}`}
+          ${eff ? `<div class="cprice">${eff.check ? `<span class="chk">⚠ conferir</span> ` : ""}${brl(eff.price)}</div>
+                   <div class="stamp">${today ? "atualizado nesta pesquisa" : `mantido de ${dayLabel(eff.priceAt || eff.updatedAt)}`}</div>`
+                : `<div class="cprice nf">preço limpo${pr && pr.notFound ? ` em ${dayLabel(pr.updatedAt)}` : ""}</div>
+                   ${pr && pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div><button class="undo-btn" data-undo="${p.id}">↺ Desfazer</button>` : ""}`}
         </div>
         <button class="icon-btn" style="color:var(--primary)" data-cam="${p.id}" aria-label="Tirar foto">${IC.camera}</button>
         <button class="icon-btn" style="color:var(--primary)" data-edit="${p.id}" aria-label="Editar preço">${IC.edit}</button>
-        ${ok ? `<button class="icon-btn" style="color:var(--red)" data-del="${p.id}" aria-label="Marcar como não encontrado">${IC.del}</button>` : ""}
+        ${eff ? `<button class="icon-btn" style="color:var(--red)" data-clr="${p.id}" aria-label="Limpar preço">${IC.sweep}</button>` : ""}
       </div>`; }).join("")}</div>`
     : `<div class="empty-state">Nenhum item encontrado ainda no ${esc(c.name)}.<br>Vá em <b>Pesquisa</b>, selecione "${esc(c.name)}" e tire as fotos ou digite os preços.<br>Aqui fica o histórico do que você já encontrou nele.</div>`}
     <button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>`;
   app.querySelector("#back").onclick = () => { openCompetitorId = null; selecting = null; render(); };
   app.querySelector("#org").onclick = () => { organizing = { cid: c.id }; render(); window.scrollTo(0, 0); };
   const sb = app.querySelector("#selBtn"); if (sb) sb.onclick = () => { selecting = new Set(); render(); window.scrollTo(0, 0); };
-  app.querySelector("#clr").onclick = () => confirmBox("Zerar pesquisa", `Começar do zero a pesquisa de "${c.name}"? Todos os itens ficam "sem preço hoje" (vazios no Excel). O histórico e os últimos preços ficam guardados.`, "Zerar", () => {
-    for (const p of hist) markNotFound(c.id, p);
-    save(); render(); toast("Pesquisa zerada");
+  app.querySelector("#clr").onclick = () => confirmBox("Limpar todos os preços", `Limpar o preço de todos os itens do "${c.name}"? Eles ficam vazios no Excel até você lançar de novo. Os últimos preços ficam guardados (dá para desfazer item por item).`, "Limpar todos", () => {
+    for (const p of withPrice) clearPrice(c.id, p);
+    save(); render(); toast("Preços limpos");
   });
   fillThumbs(app);
-  app.querySelector("#exp").onclick = () => exportDialog(o => xlsxOne(c, o), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`, missingCount([c.id]));
+  app.querySelector("#exp").onclick = () => exportDialog(() => xlsxOne(c), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`);
   app.onclick = e => {
-    const b = e.target.closest("button[data-edit],button[data-del],button[data-view],button[data-cam],button[data-same]"); if (!b) return;
-    const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.del || b.dataset.view || b.dataset.cam || b.dataset.same)); if (!prod) return;
-    if (b.dataset.same) { const v = confirmSame(c.id, prod); save(); render(); return toast(`✓ ${prod.name}: mesmo preço ${brl(v)}`); }
+    const b = e.target.closest("button[data-edit],button[data-clr],button[data-view],button[data-cam],button[data-undo]"); if (!b) return;
+    const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.clr || b.dataset.view || b.dataset.cam || b.dataset.undo)); if (!prod) return;
     if (b.dataset.view) return photoViewer(photoKey(c.id, prod.id), prod.name);
     if (b.dataset.cam) return openCamera(prod, c.id);
-    if (b.dataset.edit) return priceDialog(prod.name, dayPrice(c.id, prod), price => { setPrice(c.id, prod, price, false); save(); render(); });
-    if (b.dataset.del) {   // tirar o preço do dia = "sem preço hoje" (o último preço fica guardado)
-      confirmBox("Sem preço hoje", `Marcar "${prod.name}" como não encontrado nesta pesquisa? Fica vazio no Excel; o último preço fica guardado.`, "Marcar", () => {
-        markNotFound(c.id, prod); save(); render();
-      });
-    }
+    if (b.dataset.edit) return priceDialog(prod.name, effPrice(c.id, prod), price => { setPrice(c.id, prod, price, false); save(); render(); });
+    if (b.dataset.clr) { clearPrice(c.id, prod); save(); render(); return toast(`${prod.name}: preço limpo`); }
+    if (b.dataset.undo) { undoClear(c.id, prod); save(); render(); return toast(`${prod.name}: preço de volta`); }
   };
 }
 
-/* modo "selecionar vários": marca os itens que continuam com o mesmo preço e confirma de uma vez */
-function renderSelect(c, sameable){
-  if (!sameable.length) { selecting = null; return render(); }
+/* modo "limpar vários": marca os itens que não tinham na loja e limpa de uma vez */
+function renderSelect(c, withPrice){
+  if (!withPrice.length) { selecting = null; return render(); }
   const n = () => selecting.size;
   app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" style="color:var(--primary)" id="cancelSel" aria-label="Voltar">${IC.back}</button>
-      <h1>Mesmo preço · ${esc(c.name)}</h1>
+      <h1>Limpar preço · ${esc(c.name)}</h1>
     </div>
-    <p class="hint" style="margin:0 0 8px">Marque os itens que estão com o <b>mesmo preço da última vez</b> e toque em <b>Confirmar</b>.</p>
+    <p class="hint" style="margin:0 0 8px">Marque os itens que <b>não tinham na loja</b> e toque em <b>Limpar</b>. Eles ficam vazios no Excel.</p>
     <div class="row" style="margin-bottom:10px">
-      <button class="btn btn-white" id="all">Marcar todos (${sameable.length})</button>
+      <button class="btn btn-white" id="all">Marcar todos (${withPrice.length})</button>
       <button class="btn btn-white" id="none">Desmarcar</button>
     </div>
-    <div class="list" id="slist" style="margin-top:0;padding-bottom:90px">${sameable.map(p => {
-      const pr = priceFor(c.id, p);
+    <div class="list" id="slist" style="margin-top:0;padding-bottom:90px">${withPrice.map(p => {
+      const pr = effPrice(c.id, p);
       return `<label class="card selrow"><input type="checkbox" data-chk="${p.id}" ${selecting.has(p.id) ? "checked" : ""}>
         <span style="flex:1;min-width:0"><span class="pname" style="font-size:15px;display:block;margin:0 0 2px">${esc(p.name)}</span>
-        <span class="stamp">último: <b style="color:var(--primary)">${brl(pr.price)}</b> em ${dayLabel(pr.priceAt || pr.updatedAt)}</span></span></label>`; }).join("")}</div>
+        <span class="stamp">preço atual: <b style="color:var(--primary)">${brl(pr.price)}</b> de ${dayLabel(pr.priceAt || pr.updatedAt)}</span></span></label>`; }).join("")}</div>
     <div class="selbar">
       <button class="btn btn-ghost" id="cancelSel2">Cancelar</button>
-      <button class="btn btn-orange" id="okSel" style="flex:2">✓ Confirmar mesmo preço (<span id="cnt">${n()}</span>)</button>
+      <button class="btn btn-red" id="okSel" style="flex:2">✕ Limpar preço (<span id="cnt">${n()}</span>)</button>
     </div>`;
   const upd = () => { app.querySelector("#cnt").textContent = n(); app.querySelector("#okSel").disabled = !n(); };
   const exit = () => { selecting = null; render(); window.scrollTo(0, 0); };
   app.querySelector("#cancelSel").onclick = exit; app.querySelector("#cancelSel2").onclick = exit;
-  app.querySelector("#all").onclick = () => { sameable.forEach(p => selecting.add(p.id)); app.querySelectorAll("[data-chk]").forEach(x => x.checked = true); upd(); };
+  app.querySelector("#all").onclick = () => { withPrice.forEach(p => selecting.add(p.id)); app.querySelectorAll("[data-chk]").forEach(x => x.checked = true); upd(); };
   app.querySelector("#none").onclick = () => { selecting.clear(); app.querySelectorAll("[data-chk]").forEach(x => x.checked = false); upd(); };
   app.querySelector("#slist").onchange = e => { const x = e.target.closest("[data-chk]"); if (!x) return; x.checked ? selecting.add(+x.dataset.chk) : selecting.delete(+x.dataset.chk); upd(); };
   app.querySelector("#okSel").onclick = () => {
     let k = 0;
-    for (const id of selecting) { const p = S.products.find(x => x.id === id); if (p && confirmSame(c.id, p)) k++; }
+    for (const id of selecting) { const p = S.products.find(x => x.id === id); if (p) { clearPrice(c.id, p); k++; } }
     save(); selecting = null; render(); window.scrollTo(0, 0);
-    toast(`✓ ${k} ite${k === 1 ? "m confirmado" : "ns confirmados"} com o mesmo preço`);
+    toast(`${k} preço${k === 1 ? "" : "s"} limpo${k === 1 ? "" : "s"}`);
   };
   upd();
 }
@@ -1691,7 +1808,7 @@ const nav = document.getElementById("nav");
 function knownUsers(){ try { return JSON.parse(lsGet(USERS_KEY) || "[]"); } catch(e) { return []; } }
 function rememberUser(n){ const l = knownUsers().filter(x => x.toLowerCase() !== n.toLowerCase()); l.push(n); lsSet(USERS_KEY, JSON.stringify(l)); }
 async function userScreen(){
-  USER = null; nav.style.display = "none"; setSync(); app.onclick = null;
+  USER = null; UKEY = null; nav.style.display = "none"; setSync(); app.onclick = null;
   app.innerHTML = `
     <h1 style="margin-top:12px">PESQUISA DE PREÇO</h1>
     <p class="sub" style="font-size:16px;margin:0 0 18px">Quem está pesquisando?</p>
@@ -1702,13 +1819,12 @@ async function userScreen(){
     </form>`;
   app.querySelector("#nf").onsubmit = e => {
     e.preventDefault();
-    const n = app.querySelector("#nn").value.trim().replace(/\s+/g, " ");
+    const n = cleanText(app.querySelector("#nn").value.replace(/[^\p{L}\p{N} ._-]/gu, ""), 40);
     if (!n) return toast("Digite o seu nome");
     const same = names.find(x => x.toLowerCase() === n.toLowerCase());
     enterUser(same || n);
   };
   let names = knownUsers();
-  if (CLOUD) { try { names = [...new Set([...(await Cloud.users()), ...names])]; } catch(e) { toast("Sem internet: mostrando só os usuários deste aparelho"); } }
   names.sort((a, b) => a.localeCompare(b, "pt-BR"));
   const ul = app.querySelector("#ul"); if (!ul) return;
   ul.innerHTML = names.length ? names.map(n => `<button class="ubtn" data-u="${esc(n)}"><span class="av">${esc(n.trim()[0].toUpperCase())}</span>${esc(n)}</button>`).join("")
@@ -1716,26 +1832,17 @@ async function userScreen(){
   ul.onclick = e => { const b = e.target.closest("[data-u]"); if (b) enterUser(b.dataset.u); };
 }
 async function enterUser(name){
-  USER = name; lsSet(USER_KEY, name); rememberUser(name);
+  USER = name; UKEY = slug(name); lsSet(USER_KEY, name); rememberUser(name);
   nav.style.display = ""; openCompetitorId = null; query = "";
   const local = loadLocal();
   S = local || normalizeState(blankState());
   if (location.hash !== "#pesquisa") history.replaceState(null, "", "#pesquisa");
-  render(); setSync(CLOUD ? "wait" : undefined);
-  if (CLOUD) {
-    try {
-      const row = await Cloud.load(name);
-      if (USER !== name) return;
-      const pending = lsGet(pendKey());
-      if (row && row.dados && !(pending && local)) { S = normalizeState(row.dados); lsSet(stateKey(), JSON.stringify(S)); render(); setSync("ok"); }
-      else { lsSet(pendKey(), "1"); await push(); }
-    } catch(e) { setSync("off"); }
-  }
+  render();
   offerLegacy();
   if (S.selectedCompetitorId) warmOCR();
 }
 async function switchUser(){
-  clearTimeout(pushTimer); if (CLOUD && lsGet(pendKey())) await push();
+  if (CLOUD) return logout();
   lsDel(USER_KEY); close(); userScreen();
 }
 /* dados do site antigo (antes de ter usuários) neste aparelho */
@@ -1760,9 +1867,167 @@ function offerLegacy(){
   });
 }
 
-window.addEventListener("hashchange", () => { if (!USER) return userScreen(); openCompetitorId = null; organizing = false; selecting = null; app.onclick = null; render(); window.scrollTo(0,0); });
+/* ---------- login (com nuvem): Entrar, Esqueci minha senha, Nova senha ---------- */
+let loginFails = 0, loginBlockedUntil = 0;
+function loginScreen(msg){
+  USER = null; UKEY = null; nav.style.display = "none"; setSync(); app.onclick = null; close();
+  app.innerHTML = `
+    <h1 style="margin-top:12px">PESQUISA DE PREÇO</h1>
+    <p class="sub" style="font-size:16px;margin:0 0 18px">Entre com o seu e-mail e senha.</p>
+    ${msg ? `<div class="status warn" style="margin:-6px 0 14px">${esc(msg)}</div>` : ""}
+    <form id="lf" autocomplete="on">
+      <div class="field"><label>E-mail</label><input id="le" type="email" inputmode="email" autocomplete="username" maxlength="120" required></div>
+      <div class="field" style="margin-top:18px"><label>Senha</label><input id="lp" type="password" autocomplete="current-password" maxlength="72" required></div>
+      <button class="btn btn-orange" id="lb" style="width:100%;margin-top:4px">Entrar</button>
+    </form>
+    <button class="btn btn-ghost" id="forgot" style="width:100%;margin-top:10px;color:var(--primary)">Esqueci minha senha</button>
+    <p class="hint" style="text-align:center;margin-top:18px">Não tem acesso? Peça para a responsável cadastrar o seu e-mail.</p>`;
+  const le = app.querySelector("#le"), lp = app.querySelector("#lp"), lb = app.querySelector("#lb");
+  const last = lsGet("dscanner-ultimo-email"); if (last) le.value = last;
+  app.querySelector("#lf").onsubmit = async e => {
+    e.preventDefault();
+    if (Date.now() < loginBlockedUntil) return toast(`Muitas tentativas. Aguarde ${Math.ceil((loginBlockedUntil - Date.now()) / 1000)} segundos.`);
+    const email = le.value.trim().toLowerCase(), pw = lp.value;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Digite um e-mail válido");
+    if (!pw) return toast("Digite a senha");
+    lb.disabled = true; lb.textContent = "Entrando…";
+    try {
+      await Auth.signIn(email, pw);
+      loginFails = 0; lsSet("dscanner-ultimo-email", email);
+      document.querySelectorAll(".toast").forEach(x => x.remove());
+      enterAccount();
+    } catch(err) {
+      loginFails++;
+      if (loginFails >= 5) { loginBlockedUntil = Date.now() + 30000; loginFails = 0; }
+      toast(navigator.onLine === false ? "Sem internet. Conecte para entrar." : err.message);
+      lb.disabled = false; lb.textContent = "Entrar"; lp.value = ""; lp.focus();
+    }
+  };
+  app.querySelector("#forgot").onclick = () => forgotDialog(le.value.trim().toLowerCase());
+}
+function forgotDialog(email){
+  modal(`<h2>Esqueci minha senha</h2>
+    <p class="sub" style="margin-top:-6px">Digite o e-mail cadastrado. Vamos mandar um link para você criar uma senha nova.</p>
+    <form data-f><div class="field"><label>E-mail</label><input data-e type="email" inputmode="email" maxlength="120" value="${esc(email || "")}"></div>
+    <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Enviar link</button></div></form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-f]").onsubmit = async e => {
+      e.preventDefault();
+      const em = m.querySelector("[data-e]").value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return toast("Digite um e-mail válido");
+      try { await Auth.recover(em); } catch(err) {}
+      close();
+      modal(`<h2>Confira o seu e-mail</h2>
+        <p class="sub">Se <b>${esc(em)}</b> estiver cadastrado, você vai receber em alguns minutos um link para criar uma senha nova. Veja também a caixa de spam.</p>
+        <p class="sub">Abra o link <b>neste mesmo aparelho</b>.</p>
+        <div class="foot"><button class="btn btn-orange" data-x>Entendi</button></div>`, m2 => { m2.querySelector("[data-x]").onclick = close; });
+    };
+  });
+}
+function newPasswordScreen(){
+  nav.style.display = "none"; app.onclick = null; close();
+  app.innerHTML = `
+    <h1 style="margin-top:12px">CRIAR SENHA NOVA</h1>
+    <p class="sub" style="margin:0 0 18px">Conta: <b>${esc(SESSION.user.email)}</b></p>
+    <form id="pf">
+      <div class="field"><label>Senha nova (mínimo 8 caracteres)</label><input id="p1" type="password" autocomplete="new-password" maxlength="72"></div>
+      <div class="field" style="margin-top:18px"><label>Repita a senha nova</label><input id="p2" type="password" autocomplete="new-password" maxlength="72"></div>
+      <button class="btn btn-orange" id="pb" style="width:100%">Salvar senha</button>
+    </form>`;
+  app.querySelector("#pf").onsubmit = async e => {
+    e.preventDefault();
+    const a = app.querySelector("#p1").value, b = app.querySelector("#p2").value;
+    if (a.length < 8 || !/[A-Za-z]/.test(a) || !/\d/.test(a)) return toast("Use pelo menos 8 caracteres, com letras e números");
+    if (a !== b) return toast("As duas senhas não são iguais");
+    const pb = app.querySelector("#pb"); pb.disabled = true;
+    try { await Auth.setPassword(a); toast("Senha nova salva!"); enterAccount(); }
+    catch(err) { pb.disabled = false; toast(err.message); }
+  };
+}
+/* link do e-mail ("esqueci minha senha"): chega com #access_token=…&type=recovery */
+function handleAuthRedirect(){
+  const h = location.hash.slice(1);
+  if (!/(^|&)(access_token|error)=/.test(h)) return false;
+  const p = new URLSearchParams(h);
+  history.replaceState(null, "", location.pathname + "#pesquisa");
+  if (p.get("error")) { loginScreen("O link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\"."); return true; }
+  const at = p.get("access_token"), rt = p.get("refresh_token"), type = p.get("type");
+  (async () => {
+    try {
+      const user = await Auth.userFromToken(at);
+      Auth.store({ access_token: at, refresh_token: rt, expires_in: num(p.get("expires_in")) || 3600, user });
+      if (type === "recovery" || type === "invite") newPasswordScreen(); else enterAccount();
+    } catch(e) { loginScreen("O link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\"."); }
+  })();
+  return true;
+}
+async function enterAccount(){
+  USER = SESSION.user.email; UKEY = SESSION.user.id;
+  nav.style.display = ""; openCompetitorId = null; query = ""; close();
+  const local = loadLocal();
+  S = local || normalizeState(blankState());
+  if (location.hash !== "#pesquisa") history.replaceState(null, "", "#pesquisa");
+  render(); setSync("wait");
+  try {
+    const row = await Cloud.load();
+    if (UKEY !== SESSION?.user?.id) return;
+    const pending = lsGet(pendKey());
+    if (row && row.dados && !(pending && local)) { S = normalizeState(row.dados); lsSet(stateKey(), JSON.stringify(S)); render(); setSync("ok"); }
+    else { lsSet(pendKey(), "1"); await push(); }
+  } catch(e) {
+    if (e && e.expired) return sessionExpired();
+    setSync("off");
+  }
+  offerImport();
+  if (S.selectedCompetitorId) warmOCR();
+}
+function sessionExpired(){
+  Auth.signOut();
+  loginScreen("Sua sessão expirou. Entre de novo (nada do que você fez neste aparelho foi perdido).");
+}
+async function logout(){
+  confirmBox("Sair da conta", `Sair da conta ${USER}? Seus dados continuam salvos na nuvem.`, "Sair", async () => {
+    clearTimeout(pushTimer);
+    if (lsGet(pendKey())) { await push(); if (lsGet(pendKey())) return toast("Há alterações ainda não enviadas. Conecte à internet e tente de novo."); }
+    await Auth.signOut(); loginScreen();
+  });
+}
+/* dados que já estavam neste aparelho (antes do login): oferece trazer para a conta, uma vez */
+function offerImport(){
+  const doneKey = "dscanner-importacao-vista:" + UKEY;
+  if (lsGet(doneKey)) return;
+  const cands = [];
+  const legacy = lsGet(LEGACY_KEY); if (legacy) cands.push({ label: "Pesquisa antiga (antes dos usuários)", key: LEGACY_KEY, prefix: "" });
+  for (const n of knownUsers()) { const k = "dscanner-dados:" + slug(n); if (lsGet(k)) cands.push({ label: "Usuário " + n, key: k, prefix: slug(n) + "|" }); }
+  const ok = cands.map(c => { try { const s = normalizeState(JSON.parse(lsGet(c.key))); return s.prices.length || s.competitors.length ? { ...c, s } : null; } catch(e) { return null; } }).filter(Boolean);
+  if (!ok.length) { lsSet(doneKey, "1"); return; }
+  modal(`<h2>Trazer pesquisa deste aparelho?</h2>
+    <p class="sub" style="margin-top:-6px">Encontrei neste aparelho pesquisas feitas antes do login. Escolha uma para colocar na sua conta <b>${esc(USER)}</b> (substitui o que a conta tiver hoje):</p>
+    <div class="list" style="margin-top:8px">${ok.map((c, i) => `<button class="ubtn" data-i="${i}" style="font-size:15px">${esc(c.label)}<small style="display:block;font-weight:400;color:var(--muted)">${c.s.competitors.length} concorrente(s) · ${c.s.prices.length} preço(s)</small></button>`).join("")}</div>
+    <div class="foot"><button class="btn btn-ghost" data-n>Agora não</button></div>`,
+  m => {
+    m.querySelector("[data-n]").onclick = () => { lsSet(doneKey, "1"); close(); };
+    m.onclick = async e => {
+      const b = e.target.closest("[data-i]"); if (!b) return;
+      const c = ok[+b.dataset.i]; close(); S = c.s;
+      for (const k of Object.keys(S.photos)) {   // fotos antigas -> conta (e nuvem)
+        try { const bl = await PhotoDB.getRaw(c.prefix + k); if (bl) { await PhotoDB.put(k, bl); uploadPhoto(k, bl); } else delete S.photos[k]; } catch(err) {}
+      }
+      lsSet(c.key + ":importado", lsGet(c.key)); lsDel(c.key); lsSet(doneKey, "1");
+      save(); render(); toast("Pesquisa trazida para a sua conta");
+    };
+  });
+}
+
+window.addEventListener("hashchange", () => { if (CLOUD && handleAuthRedirect()) return; if (!USER) return CLOUD ? (SESSION ? null : loginScreen()) : userScreen(); openCompetitorId = null; organizing = false; selecting = null; app.onclick = null; render(); window.scrollTo(0,0); });
 (function boot(){
-  const u = lsGet(USER_KEY);
+  if (CLOUD) {
+    if (handleAuthRedirect()) return;          // veio do link do e-mail (senha nova)
+    if (Auth.load()) return enterAccount();     // já entrou antes neste aparelho
+    return loginScreen();
+  }
+  const u = lsGet(USER_KEY);                    // sem nuvem: usuários só neste aparelho
   if (u) enterUser(u); else userScreen();
 })();
 </script>
