@@ -5,8 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#003399">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-aestbhW2vVG1wyhARJ13ByBeXvftX6o5TFT7pDkEKSQ=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
-<title>DScanner – Pesquisa de Preço</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-bID15Tg5Yskxd74EEsaXCQaj/txX01dqzQw5RTayaKY=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
+<title>Pesquisa de Preços</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pesquisa">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root{
     --bg:#FFFFFF; --card:#FFFFFF; --card2:#F5F8FD; --primary:#003399; --primary-dark:#002270; --primary-soft:#E6ECF8;
@@ -72,6 +79,13 @@
   .modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
   .barcode-box{background:#fff;border-radius:8px;padding:16px 10px;display:flex;justify-content:center}
   .barcode-box svg{width:100%;max-width:340px;height:auto}
+  .instala{position:fixed;left:10px;right:10px;bottom:76px;z-index:60;max-width:740px;margin:0 auto;background:#fff;border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 6px 24px #0f172a2e;padding:12px;display:flex;gap:12px;align-items:center}
+  .instala img{width:48px;height:48px;border-radius:12px;flex:none}
+  .instala .tx{flex:1;font-size:14px;line-height:1.35}
+  .instala .tx b{display:block;font-size:15px;color:var(--primary)}
+  .instala .bt{display:flex;flex-direction:column;gap:6px}
+  .instala .bt .btn{padding:8px 12px;font-size:14px}
   .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;
     border-radius:10px;font-size:14px;z-index:30;max-width:90vw;text-align:center;box-shadow:0 4px 12px #0f172a40}
   .menu-sep{height:1px;background:var(--line);margin:18px 0}
@@ -2019,6 +2033,39 @@ function offerImport(){
     };
   });
 }
+
+
+/* ---------- instalar no celular (ícone na tela inicial) ---------- */
+const Instala = (() => {
+  const KEY = "dscanner-instala-adiado", DIAS = 7;
+  let evt = null;
+  const instalado = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ehIphone = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const adiado = () => { const t = +(lsGet(KEY) || 0); return t && Date.now() - t < DIAS * 864e5; };
+  function fechar(adiar){ document.querySelectorAll(".instala").forEach(x => x.remove()); if (adiar) lsSet(KEY, String(Date.now())); }
+  function mostrar(){
+    if (instalado() || adiado() || document.querySelector(".instala")) return;
+    const iphone = ehIphone() && !evt;
+    if (!evt && !iphone) return;
+    const d = document.createElement("div"); d.className = "instala";
+    d.innerHTML = `<img src="icone-192.png" alt="">
+      <div class="tx"><b>Instalar Pesquisa de Preços</b>${iphone
+        ? `No Safari, toque em <b style="display:inline;font-size:14px">Compartilhar</b> <span aria-hidden="true">(□↑)</span> e depois em <b style="display:inline;font-size:14px">Adicionar à Tela de Início</b>.`
+        : `Coloque o ícone na tela do celular e abra como aplicativo.`}</div>
+      <div class="bt">${iphone ? "" : `<button class="btn btn-orange" data-i>Instalar</button>`}<button class="btn btn-ghost" data-n>${iphone ? "Entendi" : "Agora não"}</button></div>`;
+    document.body.appendChild(d);
+    d.querySelector("[data-n]").onclick = () => fechar(true);
+    const bi = d.querySelector("[data-i]");
+    if (bi) bi.onclick = async () => { const e = evt; evt = null; fechar(false); if (!e) return; e.prompt(); try { const r = await e.userChoice; if (r && r.outcome !== "accepted") lsSet(KEY, String(Date.now())); } catch(err) {} };
+  }
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); evt = e; setTimeout(mostrar, 1500); });
+  window.addEventListener("appinstalled", () => { evt = null; fechar(false); toast("Instalado! Procure o ícone na tela do celular"); });
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+  }
+  setTimeout(mostrar, 3000);   // iPhone não tem o aviso automático: mostra o passo a passo
+  return { mostrar };
+})();
 
 window.addEventListener("hashchange", () => { if (CLOUD && handleAuthRedirect()) return; if (!USER) return CLOUD ? (SESSION ? null : loginScreen()) : userScreen(); openCompetitorId = null; organizing = false; selecting = null; app.onclick = null; render(); window.scrollTo(0,0); });
 (function boot(){
