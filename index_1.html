@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#003399">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-TXW2VR3sj9/ppXAWeT8BDvU8Xpls4zey11r+q6JCugc=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
+<title>Pesquisa de Preços</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pesquisa">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root{
+    --bg:#FFFFFF; --card:#FFFFFF; --card2:#F5F8FD; --primary:#003399; --primary-dark:#002270; --primary-soft:#E6ECF8;
+    --text:#1B2433; --muted:#6B7685; --red:#D32F2F; --line:#DCE3EE; --ok:#2E7D32; --warn:#E65100; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  button{font:inherit;cursor:pointer;border:0;border-radius:10px}
+  input{font:inherit}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 96px}
+  h1{color:var(--primary);font-size:22px;margin:4px 0 14px;letter-spacing:.5px}
+  .field{position:relative;margin-bottom:12px}
+  .field label{position:absolute;left:12px;top:-8px;background:var(--bg);padding:0 6px;font-size:12px;color:var(--muted)}
+  .field input,.field select{width:100%;padding:14px 12px;background:#fff;color:var(--text);
+    border:1px solid #C5CFDD;border-radius:8px;outline:none;font-size:16px;appearance:none}
+  .field select option{background:var(--card);color:var(--text)}
+  .field input:focus,.field select:focus{border-color:var(--primary)}
+  .field:focus-within label{color:var(--primary)}
+  .field .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  .btn{padding:12px 14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .btn-orange{background:var(--primary);color:#fff}
+  .btn-orange:active{background:var(--primary-dark)}
+  .btn-white{background:var(--primary-soft);color:var(--primary)}
+  .btn-ghost{background:transparent;color:var(--muted)}
+  .btn-ghost:hover{color:var(--primary)}
+  .btn-red{background:var(--red);color:#fff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .icon-btn{background:transparent;padding:8px;border-radius:50%;display:inline-flex}
+  .icon-btn:hover{background:#0f172a0d}
+  svg.i{width:22px;height:22px;fill:currentColor}
+  .list{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+  .card{background:var(--card);border-radius:var(--radius);padding:14px;border:1px solid var(--line);box-shadow:0 2px 6px #0f172a0f}
+  .card.alt{background:var(--card2)}
+  .pname{font-weight:700;font-size:16px;margin:0 0 10px}
+  .actions{display:flex;justify-content:space-between;gap:8px}
+  .price{color:var(--primary);font-weight:700;font-size:18px;text-align:right;margin-top:12px}
+  .price.empty{color:var(--muted);font-weight:500;font-size:15px}
+  .sub{color:var(--muted);font-size:14px}
+  .hint{color:var(--muted);font-size:14px;margin:6px 2px 0}
+  .empty-state{color:var(--muted);text-align:center;padding:48px 12px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .head h1{margin:0}
+  .comp{display:flex;align-items:center;gap:8px}
+  .comp .cname{flex:1;font-size:19px;font-weight:700;background:none;color:var(--text);text-align:left;padding:4px 0}
+  .comp .count{color:var(--primary);font-size:13px;white-space:nowrap}
+  .topbar{display:flex;align-items:center;gap:6px;margin:-4px 0 8px}
+  .topbar h1{flex:1;margin:0;color:var(--text);font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{color:var(--primary);font-weight:700;font-size:14px;white-space:nowrap}
+  nav.bottom{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -2px 8px #0f172a0f;border-top:1px solid var(--line);
+    display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+  nav.bottom a{flex:1;max-width:240px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 10px;
+    color:var(--muted);text-decoration:none;font-size:12px}
+  nav.bottom a.on{color:var(--primary)}
+  .fab{position:fixed;right:20px;bottom:84px;width:56px;height:56px;border-radius:16px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px #00339966}
+  /* modal */
+  .scrim{position:fixed;inset:0;background:#0f172a80;display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal{background:var(--bg);border:1px solid var(--line);box-shadow:0 10px 30px #0f172a33;border-radius:16px;width:100%;max-width:420px;padding:20px;max-height:90vh;overflow:auto}
+  .modal h2{margin:0 0 16px;font-size:19px}
+  .modal .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+  .barcode-box{background:#fff;border-radius:8px;padding:16px 10px;display:flex;justify-content:center}
+  .barcode-box svg{width:100%;max-width:340px;height:auto}
+  .instala{position:fixed;left:10px;right:10px;bottom:76px;z-index:60;max-width:740px;margin:0 auto;background:#fff;border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 6px 24px #0f172a2e;padding:12px;display:flex;gap:12px;align-items:center}
+  .instala img{width:48px;height:48px;border-radius:12px;flex:none}
+  .instala .tx{flex:1;font-size:14px;line-height:1.35}
+  .instala .tx b{display:block;font-size:15px;color:var(--primary)}
+  .instala .bt{display:flex;flex-direction:column;gap:6px}
+  .instala .bt .btn{padding:8px 12px;font-size:14px}
+  .impsec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px}
+  .impsec summary{cursor:pointer;font-weight:600}
+  .impsec ul{margin:8px 0 0;padding-left:18px;max-height:220px;overflow:auto}
+  .impsec li{margin:4px 0}
+  .impsec small,.impc small{display:block;color:var(--muted);font-size:12px}
+  .impc{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:6px}
+  .impc label{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+  .impc input{margin-top:4px;flex:none}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;
+    border-radius:10px;font-size:14px;z-index:30;max-width:90vw;text-align:center;box-shadow:0 4px 12px #0f172a40}
+  .menu-sep{height:1px;background:var(--line);margin:18px 0}
+  .small-links{display:flex;gap:16px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+  .small-links button{background:none;color:var(--muted);text-decoration:underline;font-size:14px}
+  .modal .foot.sticky{position:sticky;bottom:-20px;background:var(--bg);margin:14px -20px -20px;padding:12px 20px 16px;border-top:1px solid var(--line);flex-wrap:nowrap}
+  .modal .foot.sticky .btn{flex:1;padding:13px 8px;white-space:nowrap}
+  .modal .foot.sticky .btn-ghost{flex:0 0 auto}
+  .big-photo{width:100%;max-height:42vh;object-fit:contain;border-radius:10px;background:#EEF2F7;display:block}
+  .status{margin-top:10px;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .status.ok{color:var(--ok)}.status.warn{color:var(--warn);font-weight:600}
+  .spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--primary);border-radius:50%;animation:sp 0.8s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .choices{display:flex;flex-direction:column;gap:6px;margin-top:-4px}
+  .choice{background:var(--card);color:var(--text);text-align:left;padding:10px 12px;border:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .choice small{color:var(--muted);white-space:nowrap}
+  .choice.on{border-color:var(--primary);background:var(--primary-soft);font-weight:600}
+  .btn-cam{width:100%;margin-top:4px;padding:16px;font-size:17px}
+  .ptop{display:flex;gap:10px;align-items:flex-start}
+  .ptop .pname{flex:1}
+  .thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;flex:none;background:#EEF2F7;padding:0;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .actions .btn{padding:11px 10px}
+  .actions .grow{flex:1}
+  .stamp{color:var(--muted);font-size:12px;font-weight:400}
+  .done{text-align:center;color:var(--ok);font-size:22px;font-weight:700;margin:2px 0 4px}
+  .sync{position:fixed;left:12px;bottom:70px;font-size:12px;padding:4px 10px;border-radius:20px;background:#fff;border:1px solid var(--line);color:var(--muted);z-index:5;box-shadow:0 1px 4px #0f172a14}
+  .sync.ok{color:var(--ok)}.sync.off{color:var(--warn)}
+  .user-chip{background:var(--primary-soft);color:var(--primary);font-weight:600;padding:8px 12px;border-radius:20px;font-size:14px;white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+  .ubtn{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;font-size:18px;font-weight:600;color:var(--text);text-align:left}
+  .ubtn .av{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  .ubtn:active{background:var(--primary-soft)}
+  .qbar{position:fixed;left:50%;transform:translateX(-50%);bottom:152px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);z-index:6;box-shadow:0 2px 10px #0f172a26;display:flex;align-items:center;gap:6px;white-space:nowrap;max-width:94vw;overflow:hidden}
+  .qbar[hidden]{display:none}
+  .pend-banner{width:100%;margin-top:10px;background:#FFF4E5;color:var(--warn);border:1px solid #FFD8A8;font-weight:700;padding:12px;border-radius:10px;font-size:15px}
+  .pend-banner[hidden]{display:none}
+  .pend-row{display:flex;align-items:center;gap:10px;padding:10px}
+  .chk{display:inline-block;background:#FFF4E5;color:var(--warn);border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;vertical-align:middle}
+  .summary{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:4px}
+  .crow{display:flex;align-items:center;gap:6px;padding:10px 8px 10px 12px}
+  .crow .icon-btn{padding:6px}
+  .crow.nf{background:#FAFBFD}
+  .crow.nf .pname{color:var(--muted)}
+  .cprice{color:var(--primary);font-weight:700;font-size:16px}
+  .cprice.nf{color:var(--muted);font-weight:500;font-size:14px}
+  #olist{display:flex;flex-direction:column;gap:6px;padding-bottom:40px}
+  .orow{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 6px 6px 4px;font-size:14px;font-weight:600}
+  .orow.drag{box-shadow:0 6px 18px #0f172a33;border-color:var(--primary);background:var(--primary-soft);position:relative;z-index:2}
+  .orow.moved{background:var(--primary-soft)}
+  .orow.drop-before{box-shadow:0 -3px 0 var(--primary)}
+  .orow.drop-after{box-shadow:0 3px 0 var(--primary)}
+  .handle{touch-action:none;cursor:grab;font-size:20px;color:var(--muted);padding:8px 10px;user-select:none}
+  .oname{flex:1;min-width:0;cursor:pointer}
+  .oname small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .radio{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;margin-top:8px;cursor:pointer}
+  .radio input{width:20px;height:20px;accent-color:var(--primary)}
+  .obtn{background:var(--primary-soft);color:var(--primary);width:38px;height:38px;border-radius:8px;font-size:14px;flex:none}
+  .ordbox{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:8px}
+  .ordbox.ordc{background:var(--primary-soft);border-color:#C9D6EF}
+  .pline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+  .pline .price{margin-top:0;text-align:right}
+  .clear-btn{background:#FDECEC;color:var(--red);border:1px solid #F5C2C2;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700}
+  .rm-btn{display:block;background:none;color:#B4423F;font-size:12px;font-weight:600;padding:6px 0 0;text-decoration:underline}
+  .undo-btn{background:var(--primary-soft);color:var(--primary);border:1px solid #C9D6EF;border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;margin-top:6px}
+  .same-btn{background:#E8F5E9;color:var(--ok);border:1px solid #C8E6C9;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;margin-top:6px}
+  .same-btn:active{background:#C8E6C9}
+  .selrow{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer}
+  .selrow input{width:24px;height:24px;accent-color:var(--primary);flex:none}
+  .selbar{position:fixed;left:0;right:0;bottom:58px;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;z-index:7;box-shadow:0 -2px 8px #0f172a14}
+  .selbar .btn{padding:13px 10px}
+  .big-price{font-size:28px;font-weight:700;color:var(--primary);text-align:center;margin:4px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav class="bottom" id="nav">
+  <a href="#pesquisa" data-tab="pesquisa">
+    <svg class="i" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    Pesquisa</a>
+  <a href="#concorrentes" data-tab="concorrentes">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    Concorrentes</a>
+</nav>
+<div id="layer"></div>
+<div id="sync" class="sync" hidden></div>
+<input type="file" id="cam" accept="image/*" capture="environment" hidden>
+<input type="file" id="gal" accept="image/*" multiple hidden>
+<input type="file" id="shelfIn" accept="image/*" multiple hidden>
+<div id="qbar" class="qbar" hidden></div>
+
+<script>
+"use strict";
+/* ============================================================
+   DScanner Web – versão web do app Android DScanner2026
+   Os dados ficam salvos no navegador (localStorage).
+   ============================================================ */
+
+const DEFAULT_PRODUCTS = [{"name": "ARROZ SEPE T1 5KG", "barCode": "7896009865657"}, {"name": "ARROZ SEPE PARB T1 5KG", "barCode": "7896009867293"}, {"name": "ARROZ SEPE PREMIUM T1 5KG", "barCode": "7896009866944"}, {"name": "ARROZ PURO GRÃO BCO T1 5KG", "barCode": "7897297900112"}, {"name": "ARROZ SABOROSO CAAL T1 5KG", "barCode": "7898295150189"}, {"name": "ARROZ ALEGRE T1 5KG", "barCode": "7898295155207"}, {"name": "ARROZ RAMPINELLI BCO LF 5KG", "barCode": "7896546112252"}, {"name": "ARROZ RAMPINELLI PARB 5KG", "barCode": "7896546110050"}, {"name": "ARROZ DONO DA CASA T1 5KG", "barCode": "7896641000317"}, {"name": "ARROZ SEPE BCO T1 1KG", "barCode": "7896009863547"}, {"name": "ARROZ SEPE T1 2KG", "barCode": "7896009863752"}, {"name": "ARROZ SEPE PARB T1 1KG", "barCode": "7896009866050"}, {"name": "ARROZ RAMPINELLI BCO T1 1KG", "barCode": "7896546112214"}, {"name": "ARROZ RAMPINELLI PARB T1 1KG", "barCode": "7896546110012"}, {"name": "ARROZ CALAFATE T1 1KG", "barCode": "7896010355062"}, {"name": "FEIJÃO PRETO COMBRASIL 1KG", "barCode": "7896101062015"}, {"name": "FEIJÃO PRETO ANA PLUS T1 1KG", "barCode": "7898063330072"}, {"name": "FEIJÃO PRETO RIO DOCE 1KG", "barCode": "7897095900758"}, {"name": "FEIJÃO PRETO JUJU T1 1KG", "barCode": "7896517400036"}, {"name": "FEIJÃO PRETO NORTE T1 1KG", "barCode": "7898052521160"}, {"name": "FEIJÃO PRETO NICO T1 1KG", "barCode": "7897769200108"}, {"name": "FEIJÃO PRETO LÍVIA T1 1KG", "barCode": "7897769200320"}, {"name": "FEIJÃO CARIOCA COMBRASIL 1KG", "barCode": "7896101062022"}, {"name": "FEIJÃO CARIOCA ANA PLUS T1 1KG", "barCode": "7898063330041"}, {"name": "FEIJÃO CARIOCA JUJU T1 1KG", "barCode": "7896517400302"}, {"name": "FEIJÃO CARIOCA NORTE T1 1KG", "barCode": "7898052521016"}, {"name": "FEIJÃO CARIOCA NICO T1 1KG", "barCode": "7897769200184"}, {"name": "FEIJÃO CARIOCA LÍVIA T1 1KG", "barCode": "7897769200290"}, {"name": "AÇÚCAR CRISTAL ALCON 5KG", "barCode": "7898996103330"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 5KG", "barCode": "7898187830052"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 5KG", "barCode": "7896894900082"}, {"name": "AÇÚCAR CRISTAL COAGRO 5KG", "barCode": "7898903106010"}, {"name": "AÇÚCAR CRISTAL ALCON 2KG", "barCode": "7898996103323"}, {"name": "AÇÚCAR CRISTAL SANTA ISABEL 2KG", "barCode": "7898187830021"}, {"name": "AÇÚCAR CRISTAL CARAVELAS 2KG", "barCode": "7896894900075"}, {"name": "AÇÚCAR CRISTAL COAGRO 2KG", "barCode": "7898903106027"}, {"name": "ÓLEO DE SOJA LIZA PET 900ML", "barCode": "7896036090244"}, {"name": "ÓLEO DE SOJA ABC PET 900ML", "barCode": "7896242200048"}, {"name": "ÓLEO DE SOJA SOYA PET 900ML", "barCode": "7891080801204"}, {"name": "ÓLEO DE SOJA COAMO PET 900ML", "barCode": "7896279600538"}, {"name": "ÓLEO DE SOJA VITALIV PET 900ML", "barCode": "7898247780297"}, {"name": "LEITE LONGA VIDA INT CAPEL 1L", "barCode": "7898360430215"}, {"name": "LEITE LONGA VIDA INT DAMARE 1L", "barCode": "7898945133203"}, {"name": "LEITE LONGA VIDA INT ITALAC 1L", "barCode": "7898080640611"}, {"name": "LEITE LONGA VIDA INT PIRACANJUBA 1L", "barCode": "7898215151708"}, {"name": "LEITE LONGA VIDA INT PORTO ALEGRE 1L", "barCode": "7896122305207"}, {"name": "LEITE LONGA VIDA INT SELITA 1L", "barCode": "7896484411509"}, {"name": "CAFÉ 3 CORAÇÕES ALMOF 250G EXTRA FORTE", "barCode": "7896005801512"}, {"name": "CAFÉ FORT POUCH 250G TORRADO E MOÍDO", "barCode": "7896005800539"}, {"name": "CAFÉ NÚMERO UM ALMOF 250G TRADICIONAL", "barCode": "7896212700011"}, {"name": "CAFÉ CAFUSO ALMOF 250G TRADICIONAL", "barCode": "7896298600113"}, {"name": "CAFÉ PILÃO VACUO PURO 250G TRADICIONAL", "barCode": "7896089012637"}, {"name": "CAFÉ MERIDIANO ALMOF 250G EXTRA FORTE", "barCode": "7896246700162"}, {"name": "CAFÉ MERIDIANO ALMOF 250G TRADICIONAL", "barCode": "7896246700025"}, {"name": "CAFÉ GRÃO DA ROÇA ALMOF 250G TRADICIONAL", "barCode": "7898287600029"}, {"name": "CAFÉ GLÓRIA ALMOF 250G EXTRA FORTE", "barCode": "7898908355192"}, {"name": "CAFÉ DAMARE ALMOF 250G TRADICIONAL", "barCode": "7898945133012"}, {"name": "CAFÉ MELITTA POUCH 250G TRADICIONAL", "barCode": "7891021006088"}, {"name": "FARINHA TRIGO ADRIA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO ESP PALOMA 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM 5KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM FERM 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM POLI 1KG", "barCode": ""}, {"name": "FARINHA TRIGO NUMERO UM PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA 5KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA INTEGRAL 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA PP 1KG", "barCode": ""}, {"name": "FARINHA TRIGO REGINA SEMOLADA 25KG", "barCode": ""}, {"name": "FARINHA TRIGO TRES COROAS T1 1KG", "barCode": ""}, {"name": "LEITE LV INT BH 1L", "barCode": ""}, {"name": "ARROZ CATARINAO BCO T1 5KG", "barCode": ""}, {"name": "ARROZ DONA MILU T1 5KG", "barCode": ""}, {"name": "ARROZ PURO GRAO BCO T1 1KG", "barCode": ""}, {"name": "ARROZ SEPE PREMIUM T1 1KG", "barCode": ""}, {"name": "OLEO SOJA ABC PET 900ML", "barCode": ""}];
+/* Banco de dados na internet (Supabase). Vazio = só neste aparelho. */
+const SUPABASE_URL = "https://jyonibfzegkcsyjjtfao.supabase.co";
+const SUPABASE_KEY = "sb_publishable_lrEcO7ApEjSeYBijjGTLnA_QCtSuZDG";
+const CLOUD = (/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL) || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(SUPABASE_URL)) && /^[A-Za-z0-9._-]{20,}$/.test(SUPABASE_KEY);
+
+/* ---------- ícones ---------- */
+const IC = {
+  barcode:'<svg class="i" viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>',
+  edit:'<svg class="i" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+  del:'<svg class="i" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+  sweep:'<svg class="i" viewBox="0 0 24 24"><path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>',
+  back:'<svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>',
+  dl:'<svg class="i" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>',
+  share:'<svg class="i" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-5.91.7L8.04 9.81A2.99 2.99 0 0 0 3 12a3 3 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 1 0 2.92-2.92z"/></svg>',
+  camera:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>',
+  chev:'<svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M7 10l5 5 5-5z"/></svg>'
+};
+
+/* ---------- armazenamento (por usuário: no aparelho + na nuvem) ---------- */
+const USER_KEY = "dscanner-usuario", USERS_KEY = "dscanner-usuarios", LEGACY_KEY = "dscanner-web-v1";
+let USER = null;   // nome (sem nuvem) ou e-mail (com login)
+let UKEY = null;   // chave interna do usuário: nome simplificado (sem nuvem) ou id da conta (com login)
+const slug = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "usuario";
+const stateKey = () => "dscanner-dados:" + UKEY;
+const pendKey = () => stateKey() + ":pendente";
+const lsGet = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} };
+const lsDel = k => { try { localStorage.removeItem(k); } catch(e) {} };
+function blankState(){
+  let id = 1;
+  return {
+    nextId: DEFAULT_PRODUCTS.length + 1,
+    products: DEFAULT_PRODUCTS.map(p => ({ id: id++, name: p.name, barCode: p.barCode })),
+    competitors: [], prices: [], selectedCompetitorId: null, photos: {}, links: [], aliases: [], pending: []
+  };
+}
+/* Validação de tudo que entra (backup, nuvem, dados do aparelho): só passam campos esperados, nos tipos certos */
+const isId = x => Number.isInteger(+x) && +x > 0 && +x < 1e12;
+const arr = v => Array.isArray(v) ? v : [];
+const obj = v => v && typeof v === "object" && !Array.isArray(v) ? v : {};
+const num = v => (typeof v === "number" || typeof v === "string") && Number.isFinite(+v) ? +v : null;
+const cleanText = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+const digits = v => String(v ?? "").replace(/\D/g, "").slice(0, 14);
+const money = v => { const n = num(v); return n !== null && n > 0 && n < 1e6 ? Math.round(n * 100) / 100 : null; };
+function uniqById(list){ const seen = new Set(); return list.filter(x => !seen.has(x.id) && seen.add(x.id)); }
+function normalizeState(s){
+  s = obj(s);
+  const prodsIn = Array.isArray(s.products) ? s.products : blankState().products;
+  const out = {};
+  out.products = uniqById(prodsIn.filter(p => p && isId(p.id)).slice(0, 5000)
+    .map(p => ({ id: +p.id, name: cleanText(p.name, 120).toUpperCase() || "ITEM SEM NOME", barCode: digits(p.barCode), code: String(p.code ?? "").replace(/[^0-9A-Za-z.\-\/]/g, "").slice(0, 30) })));
+  out.competitors = uniqById(arr(s.competitors).filter(c => c && isId(c.id)).slice(0, 300)
+    .map(c => ({ id: +c.id, name: cleanText(c.name, 80) || "Concorrente" })));
+  out.prices = uniqById(arr(s.prices).filter(p => p && isId(p.id) && isId(p.competitorId)).slice(0, 200000)
+    .map(p => { const old001 = money(p.price) === 0.01;   // versão antiga marcava "não tinha" com R$ 0,01
+      return { id: +p.id, competitorId: +p.competitorId, productId: isId(p.productId) ? +p.productId : null,
+      name: cleanText(p.name, 120), barCode: digits(p.barCode), price: old001 ? null : money(p.price), price2: null,
+      check: p.check === true, notFound: p.notFound === true || old001, updatedAt: num(p.updatedAt) || 0, priceAt: num(p.priceAt) || null, clearedFrom: num(p.clearedFrom) || undefined }; }));
+  out.selectedCompetitorId = isId(s.selectedCompetitorId) ? +s.selectedCompetitorId : null;
+  out.photos = {};
+  for (const [k, v] of Object.entries(obj(s.photos))) if (/^\d{1,12}:\d{1,12}$/.test(k) && num(v)) out.photos[k] = num(v);
+  out.links = arr(s.links).filter(l => l && isId(l.cid) && isId(l.pid) && Array.isArray(l.toks)).slice(-5000)
+    .map(l => ({ cid: +l.cid, pid: +l.pid, toks: l.toks.filter(x => typeof x === "string").map(x => x.replace(/[^a-z0-9.]/g, "").slice(0, 40)).filter(Boolean).slice(0, 60), at: num(l.at) || 0 }));
+  out.aliases = arr(s.aliases).filter(a => a && /^\d{8,14}$/.test(String(a.ean)) && isId(a.productId)).slice(-3000)
+    .map(a => ({ cid: isId(a.cid) ? +a.cid : null, ean: String(a.ean), toks: [], productId: +a.productId }));
+  out.pending = arr(s.pending).filter(p => p && isId(p.id) && isId(p.cid)).slice(-500)
+    .map(p => ({ id: +p.id, cid: +p.cid, at: num(p.at) || 0, price: money(p.price), text: String(p.text ?? "").slice(0, 4000),
+      ean: /^\d{8,14}$/.test(String(p.ean)) ? String(p.ean) : null, darkUnread: p.darkUnread === true,
+      guess: isId(p.guess) ? +p.guess : null, motivo: p.motivo === "preço" ? "preço" : "item", retry: p.retry === true, shelf: p.shelf === true }));
+  out.orders = {};
+  for (const [k, v] of Object.entries(obj(s.orders))) if (/^\d{1,12}$/.test(k) && Array.isArray(v)) out.orders[k] = v.filter(isId).map(Number);
+  out.savedAt = num(s.savedAt) || 0;
+  const maxId = Math.max(0, ...out.products.map(x => x.id), ...out.competitors.map(x => x.id), ...out.prices.map(x => x.id), ...out.pending.map(x => x.id));
+  out.nextId = isId(s.nextId) && +s.nextId > maxId ? +s.nextId : maxId + 1;
+  return out;
+}
+function loadLocal(){
+  const raw = lsGet(stateKey());
+  if (raw) { try { return normalizeState(JSON.parse(raw)); } catch(e) {} }
+  return null;
+}
+let S = normalizeState(blankState());
+let pushTimer = null, pushing = false;
+function save(){
+  if (!USER) return;
+  S.savedAt = Date.now();
+  lsSet(stateKey(), JSON.stringify(S));
+  if (CLOUD) { lsSet(pendKey(), "1"); clearTimeout(pushTimer); pushTimer = setTimeout(push, 800); setSync("wait"); }
+}
+async function push(){
+  if (!CLOUD || !USER || !SESSION || pushing) return;
+  pushing = true;
+  try {
+    await retryPhotos();
+    await Cloud.save(USER, S);
+    lsDel(pendKey()); setSync("ok");
+  } catch(e) {
+    if (e && e.expired) { setSync("off"); sessionExpired(); return; }
+    setSync("off"); clearTimeout(pushTimer); pushTimer = setTimeout(push, 20000);
+  } finally { pushing = false; }
+}
+window.addEventListener("online", () => push());
+function setSync(st){
+  const el = document.getElementById("sync"); if (!el) return;
+  if (!CLOUD || !USER) { el.hidden = true; return; }
+  el.hidden = false; el.className = "sync " + st;
+  el.textContent = st === "ok" ? "☁ Salvo na nuvem" : st === "wait" ? "☁ Salvando…" : "📱 Salvo no celular · envia quando tiver internet";
+}
+const newId = () => S.nextId++;
+
+/* ---------- nuvem (Supabase) com login por e-mail e senha ---------- */
+const SESSION_KEY = "dscanner-sessao";
+let SESSION = null;   // { access_token, refresh_token, expires_at, user: { id, email } }
+const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
+function authMessage(status, j){
+  const code = String((j && (j.error_code || j.error || j.code)) || "");
+  if (status === 429) return "Muitas tentativas. Espere alguns minutos e tente de novo.";
+  if (status === 400 && /invalid|grant|credentials/i.test(code + " " + (j && (j.msg || j.error_description) || ""))) return "E-mail ou senha incorretos.";
+  if (status === 422 || /weak|password/i.test(code)) return "Senha fraca: use pelo menos 8 caracteres, com letras e números.";
+  return "Não foi possível entrar agora. Tente de novo.";
+}
+const Auth = {
+  load(){
+    try { const s = JSON.parse(lsGet(SESSION_KEY) || "null");
+      if (s && typeof s.refresh_token === "string" && s.user && isUuid(s.user.id)) SESSION = s; } catch(e) {}
+    return SESSION;
+  },
+  store(j){
+    if (!j || !j.access_token || !j.user || !isUuid(j.user.id)) throw new Error("resposta inválida");
+    SESSION = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (num(j.expires_in) || 3600) * 1000,
+      user: { id: j.user.id, email: cleanText(j.user.email, 120) } };
+    lsSet(SESSION_KEY, JSON.stringify(SESSION));
+  },
+  async post(path, body, token){
+    const h = { apikey: SUPABASE_KEY, "Content-Type": "application/json" };
+    if (token) h.Authorization = "Bearer " + token;
+    const r = await fetch(SUPABASE_URL + path, { method: "POST", headers: h, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    return { r, j };
+  },
+  async signIn(email, password){
+    const { r, j } = await Auth.post("/auth/v1/token?grant_type=password", { email, password });
+    if (!r.ok) throw new Error(authMessage(r.status, j));
+    Auth.store(j);
+  },
+  _ref: null,
+  refresh(){
+    if (!Auth._ref) Auth._ref = (async () => {
+      if (!SESSION) throw Object.assign(new Error("sem sessão"), { expired: true });
+      const { r, j } = await Auth.post("/auth/v1/token?grant_type=refresh_token", { refresh_token: SESSION.refresh_token });
+      if (!r.ok) throw Object.assign(new Error("sessão expirada"), { expired: r.status === 400 || r.status === 401 });
+      Auth.store(j);
+    })().finally(() => { Auth._ref = null; });
+    return Auth._ref;
+  },
+  async token(){
+    if (!SESSION) throw Object.assign(new Error("sem sessão"), { expired: true });
+    if (Date.now() > SESSION.expires_at - 60000) await Auth.refresh();
+    return SESSION.access_token;
+  },
+  async recover(email){
+    const back = location.origin + location.pathname;
+    await Auth.post("/auth/v1/recover?redirect_to=" + encodeURIComponent(back), { email });
+  },
+  async setPassword(password){
+    const r = await fetch(SUPABASE_URL + "/auth/v1/user", { method: "PUT",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + await Auth.token(), "Content-Type": "application/json" },
+      body: JSON.stringify({ password }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(authMessage(r.status, j));
+  },
+  async userFromToken(access_token){
+    const r = await fetch(SUPABASE_URL + "/auth/v1/user", { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + access_token } });
+    if (!r.ok) throw new Error("link inválido ou vencido");
+    return r.json();
+  },
+  async signOut(){
+    try { if (SESSION) await Auth.post("/auth/v1/logout", {}, SESSION.access_token); } catch(e) {}
+    SESSION = null; lsDel(SESSION_KEY);
+  }
+};
+const Cloud = {
+  async req(path, opt, retry){
+    opt = opt || {};
+    const h = { apikey: SUPABASE_KEY, Authorization: "Bearer " + await Auth.token(), ...(opt.headers || {}) };
+    const r = await fetch(SUPABASE_URL + path, { ...opt, headers: h });
+    if (r.status === 401 && retry !== false) { await Auth.refresh(); return Cloud.req(path, opt, false); }
+    return r;
+  },
+  async load(){
+    const r = await Cloud.req(`/rest/v1/pesquisa?select=dados,atualizado&user_id=eq.${UKEY}`);
+    if (!r.ok) throw new Error("load " + r.status); const j = await r.json(); return j[0] || null;
+  },
+  async save(_u, dados){
+    const r = await Cloud.req(`/rest/v1/pesquisa?on_conflict=user_id`, { method: "POST",
+      headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ user_id: UKEY, email: USER, dados, atualizado: new Date().toISOString() }) });
+    if (!r.ok) throw new Error("save " + r.status);
+  },
+  path: k => `${UKEY}/${k.replace(":", "_")}.jpg`,
+  async putPhoto(_u, k, blob){
+    const r = await Cloud.req(`/storage/v1/object/fotos/${Cloud.path(k)}`, { method: "POST",
+      headers: { "Content-Type": "image/jpeg", "x-upsert": "true", "cache-control": "max-age=3600" }, body: blob });
+    if (!r.ok) throw new Error("foto " + r.status);
+  },
+  async delPhoto(_u, k){
+    try { await Cloud.req(`/storage/v1/object/fotos`, { method: "DELETE",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: [Cloud.path(k)] }) }); } catch(e) {}
+  },
+  async getPhoto(k){   // fotos são privadas: só o dono baixa, com o login dele
+    const r = await Cloud.req(`/storage/v1/object/authenticated/fotos/${Cloud.path(k)}`);
+    if (!r.ok) throw new Error("foto " + r.status);
+    const b = await r.blob(); if (!/^image\//.test(b.type || "image/jpeg")) throw new Error("não é imagem");
+    return b;
+  }
+};
+/* fotos que não subiram (sem internet) ficam numa fila e sobem depois */
+const photoQKey = () => "dscanner-fotos-pendentes:" + UKEY;
+function queuePhoto(k){ const q = JSON.parse(lsGet(photoQKey()) || "[]"); if (!q.includes(k)) q.push(k); lsSet(photoQKey(), JSON.stringify(q)); }
+async function uploadPhoto(k, blob){
+  if (!CLOUD) return;
+  try { await Cloud.putPhoto(USER, k, blob); } catch(e) { queuePhoto(k); setSync("off"); }
+}
+async function retryPhotos(){
+  const q = JSON.parse(lsGet(photoQKey()) || "[]"); if (!q.length) return;
+  const left = [];
+  for (const k of q) {
+    if (!S.photos[k]) continue;
+    try { const blob = await PhotoDB.get(k); if (blob) await Cloud.putPhoto(USER, k, blob); } catch(e) { left.push(k); }
+  }
+  lsSet(photoQKey(), JSON.stringify(left));
+  if (left.length) throw new Error("fotos pendentes");
+}
+
+/* ---------- utilidades ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = v => "R$ " + Number(v).toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const byName = (a,b) => a.name.localeCompare(b.name, "pt-BR");
+function toast(msg){
+  document.querySelectorAll(".toast").forEach(x => x.remove());
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2800);
+}
+function priceFor(competitorId, product){
+  return S.prices.find(p => p.competitorId === competitorId &&
+    (p.productId === product.id || (p.productId == null && p.name === product.name)));
+}
+const pricesOf = cid => S.prices.filter(p => p.competitorId === cid).sort(byName);
+/* ---------- dia da pesquisa (sem preço no dia = vazio no Excel) ---------- */
+const NOT_FOUND = 0.01;
+const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+const dayLabel = ts => new Date(ts).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+function researchDay(cid){
+  let m = 0; for (const p of S.prices) if (p.competitorId === cid && p.updatedAt > m) m = p.updatedAt;
+  return m || null;
+}
+/* REGRA: o último preço continua valendo (mesmo sem mexer), até você tocar em "Limpar preço" */
+function effPrice(cid, prod){ const p = priceFor(cid, prod); return p && !p.notFound && p.price > 0 ? p : null; }
+const checkedOn = (p, rd) => !!(p && rd && p.updatedAt && dayKey(p.updatedAt) === dayKey(rd));   // mexido no dia da pesquisa
+function lastPrice(cid, prod){ const x = priceFor(cid, prod); return x && x.price > 0 ? x.price : null; }
+/* histórico do concorrente: itens que já tiveram preço ou foto nele */
+const inHistory = (cid, p) => !!(priceFor(cid, p) || S.photos[photoKey(cid, p.id)]);   // preço, preço limpo ou foto
+/* "Limpar preço": não tinha na loja. O último preço fica guardado (dá para desfazer) */
+function clearPrice(cid, prod){
+  const ex = priceFor(cid, prod), now = Date.now();
+  if (ex) { if (!ex.notFound) { ex.clearedFrom = ex.updatedAt; ex.priceAt = ex.priceAt || ex.updatedAt; } ex.notFound = true; ex.check = false; ex.updatedAt = now; }
+  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price: null, notFound: true, updatedAt: now });
+}
+function undoClear(cid, prod){
+  const ex = priceFor(cid, prod); if (!ex || !ex.notFound) return false;
+  ex.notFound = false; ex.updatedAt = ex.clearedFrom || ex.priceAt || ex.updatedAt; delete ex.clearedFrom;
+  return ex.price > 0;
+}
+const markNotFound = clearPrice;
+/* "Remover deste concorrente": apaga preço, histórico e foto do item SÓ neste concorrente (o item continua na lista geral).
+   Os vínculos das etiquetas ficam guardados: a próxima foto ainda é reconhecida. */
+function removeFromCompetitor(cid, prod){
+  S.prices = S.prices.filter(x => !(x.competitorId === cid && (x.productId === prod.id || (x.productId == null && x.name === prod.name))));
+  removePhoto(cid, prod.id);
+}
+/* ordem dos itens: cada concorrente pode ter a sua; sem ordem própria = ordem geral */
+function productsFor(cid){
+  const ord = cid && S.orders[cid];
+  if (!ord) return S.products;
+  const map = new Map(S.products.map(p => [p.id, p])), seen = new Set(), out = [];
+  for (const id of ord) { const p = map.get(id); if (p && !seen.has(id)) { out.push(p); seen.add(id); } }
+  for (const p of S.products) if (!seen.has(p.id)) out.push(p);   // itens que ainda não estavam na ordem dele
+  return out;
+}
+/* agrupa itens parecidos (pela 1ª palavra: ARROZ, FEIJÃO, CAFÉ…), mantendo a sua ordem dentro de cada grupo */
+const groupKey = name => (norm(name).split(/[^a-z0-9]+/).filter(Boolean)[0] || "");
+const groupLabel = name => (String(name).trim().split(/[^A-Za-zÀ-ÿ0-9]+/).filter(Boolean)[0] || "").toUpperCase();
+function groupedProducts(list){
+  const order = [], map = new Map();
+  for (const p of list || S.products) { const k = groupKey(p.name); if (!map.has(k)) { map.set(k, []); order.push(k); } map.get(k).push(p); }
+  return order.flatMap(k => map.get(k));
+}
+
+/* ---------- EAN-13 (mesma lógica do app) ---------- */
+function ean13Check(d12){
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += (+d12[i]) * (i % 2 ? 3 : 1);
+  return String((10 - sum % 10) % 10);
+}
+function sanitizeEAN13(code){
+  if (!/^\d{13}$/.test(code)) return null;
+  return code.slice(0,12) + ean13Check(code.slice(0,12));
+}
+function ean13SVG(code){
+  const L = ["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+  const G = ["0100111","0110011","0011011","0100001","0011101","0111001","0000101","0010001","0001001","0010111"];
+  const R = L.map(p => p.replace(/./g, b => b === "0" ? "1" : "0"));
+  const PAR = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
+  const par = PAR[+code[0]];
+  let bits = "101";
+  for (let i = 1; i <= 6; i++) bits += (par[i-1] === "L" ? L : G)[+code[i]];
+  bits += "01010";
+  for (let i = 7; i <= 12; i++) bits += R[+code[i]];
+  bits += "101";
+  const m = 3, q = 11 * m, h = 70, guardH = 78, W = bits.length * m + 2 * q;
+  const guards = new Set([0,1,2,45,46,47,48,49,92,93,94]);
+  let rects = "";
+  for (let i = 0; i < bits.length; i++) if (bits[i] === "1")
+    rects += `<rect x="${q + i*m}" y="4" width="${m}" height="${guards.has(i) ? guardH : h}"/>`;
+  const t = (x, s) => `<text x="${x}" y="96" font-family="monospace" font-size="16" text-anchor="middle">${s}</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} 102">${rects}` +
+    t(q - 10, code[0]) + t(q + 24*m, code.slice(1,7)) + t(q + 71*m, code.slice(7)) + `</svg>`;
+}
+
+/* ---------- gerador de .xlsx (sem bibliotecas) ---------- */
+const CRC = (() => { const t = []; for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [name, text] of files){
+    const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(8,0,true);
+    h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer), nb, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true);
+    c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true);
+    c.setUint16(28,nb.length,true); c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer), nb);
+    off += 30 + nb.length + data.length;
+  }
+  const csize = central.reduce((s,a) => s + a.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true);
+  e.setUint32(12,csize,true); e.setUint32(16,off,true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)],
+    {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function colName(i){ let s = ""; i++; while (i > 0){ const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function xesc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""); }
+/* rows: array de arrays; números viram células numéricas com formato R$ */
+function makeXlsx(sheetName, rows, widths){
+  const sd = rows.map((r, ri) => `<row r="${ri+1}">` + r.map((v, ci) => {
+    const ref = colName(ci) + (ri + 1);
+    if (v === null || v === undefined || v === "") return "";
+    if (typeof v === "number") return `<c r="${ref}" s="2"><v>${v}</v></c>`;
+    return `<c r="${ref}" t="inlineStr"${ri === 0 ? ' s="1"' : ""}><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
+  }).join("") + `</row>`).join("");
+  const cols = `<cols>` + widths.map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("") + `</cols>`;
+  const NS = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"';
+  const RNS = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  return zip([
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook ${NS} ${RNS}><sheets><sheet name="${xesc(sheetName.slice(0,31))}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet ${NS}><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot;\\ #,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+    ["xl/worksheets/sheet1.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet ${NS}><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData></worksheet>`]
+  ]);
+}
+/* no Excel: o preço que vale (último guardado); vazio = preço limpo ou nunca encontrado */
+function cellPrice(cid, p){ const d = effPrice(cid, p); return d ? d.price : ""; }
+function xlsxAll(opt){
+  const comps = [...S.competitors].sort(byName).map(c => ({ c, rd: researchDay(c.id) }));
+  const rows = [["Grupo", "Código", "Produto", "Código de Barras", ...comps.map(x => x.c.name + (x.rd ? " (" + dayLabel(x.rd) + ")" : ""))]];
+  for (const p of groupedProducts()) rows.push([groupLabel(p.name), p.code || "", p.name, p.barCode, ...comps.map(x => cellPrice(x.c.id, p))]);
+  return makeXlsx("Pesquisa de Preços", rows, [14, 14, 52, 18, ...comps.map(() => 20)]);
+}
+function xlsxOne(c, opt){
+  const rd = researchDay(c.id);
+  const rows = [["Grupo", "Código", "Nome", "Código de Barras", "Preço" + (rd ? " (" + dayLabel(rd) + ")" : ""), "Situação"]];
+  for (const p of groupedProducts()) {
+    const v = cellPrice(c.id, p);
+    rows.push([groupLabel(p.name), p.code || "", p.name, p.barCode, v, v !== "" ? "encontrado" : "não encontrado"]);
+  }
+  return makeXlsx("Produtos", rows, [14, 14, 52, 18, 16, 26]);
+}
+
+/* ---------- lista de produtos: baixar e importar (Excel .xlsx ou .csv) ---------- */
+const cleanCode = v => String(v ?? "").replace(/[^0-9A-Za-z.\-\/]/g, "").slice(0, 30);
+const nameKey = s => norm(String(s || "")).replace(/[^a-z0-9]+/g, " ").trim();
+function cellText(v){
+  let s = String(v ?? "").trim();
+  if (/^-?\d+(\.\d+)?e\+?\d+$/i.test(s)) { const n = Number(s); if (Number.isFinite(n)) s = n.toLocaleString("fullwide", { useGrouping: false }); }
+  else if (/^\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, "");
+  return s;
+}
+function downloadProductList(){
+  const rows = [["Código", "Descrição", "Código de barras"]];
+  for (const p of S.products) rows.push([p.code || "", p.name, p.barCode || ""]);
+  saveFile(makeXlsx("Produtos", rows, [16, 52, 18]), `lista_de_produtos_${dayKey(Date.now())}.xlsx`);
+}
+/* lê o .xlsx sem bibliotecas: abre o zip e a 1ª planilha */
+async function unzipEntries(buf){
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 70000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("zip");
+  const n = dv.getUint16(e + 10, true); let off = dv.getUint32(e + 16, true);
+  const out = {}, dec = new TextDecoder();
+  for (let k = 0; k < n && off + 46 <= u8.length; k++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true);
+    const nl = dv.getUint16(off + 28, true), xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true), lo = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + nl));
+    out[name] = { method, csize, lo };
+    off += 46 + nl + xl + cl;
+  }
+  out.__read = async name => {
+    const f = out[name]; if (!f) return null;
+    const start = f.lo + 30 + dv.getUint16(f.lo + 26, true) + dv.getUint16(f.lo + 28, true);
+    const data = u8.subarray(start, start + f.csize);
+    if (f.method === 0) return dec.decode(data);
+    if (f.method !== 8 || typeof DecompressionStream === "undefined") throw new Error("compressão");
+    const s = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return await new Response(s).text();
+  };
+  return out;
+}
+async function readXlsx(buf){
+  const z = await unzipEntries(buf), P = new DOMParser();
+  const xml = async n => { const t = await z.__read(n); return t ? P.parseFromString(t, "application/xml") : null; };
+  let sheet = "xl/worksheets/sheet1.xml";
+  try {
+    const wb = await xml("xl/workbook.xml"), rels = await xml("xl/_rels/workbook.xml.rels");
+    const first = wb && wb.getElementsByTagName("sheet")[0];
+    const rid = first && (first.getAttribute("r:id") || first.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id"));
+    const rel = rid && rels && [...rels.getElementsByTagName("Relationship")].find(r => r.getAttribute("Id") === rid);
+    if (rel) { const t = rel.getAttribute("Target").replace(/^\//, ""); sheet = t.startsWith("xl/") ? t : "xl/" + t; }
+  } catch(e) {}
+  const ssDoc = await xml("xl/sharedStrings.xml");
+  const ss = ssDoc ? [...ssDoc.getElementsByTagName("si")].map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join("")) : [];
+  const doc = await xml(sheet); if (!doc) throw new Error("planilha");
+  const colIdx = ref => { const m = /^[A-Z]+/.exec(ref || ""); if (!m) return -1; let n = 0; for (const ch of m[0]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  const rows = [];
+  for (const r of [...doc.getElementsByTagName("row")].slice(0, 20000)) {
+    const row = [];
+    let auto = 0;
+    for (const c of r.getElementsByTagName("c")) {
+      let i = colIdx(c.getAttribute("r")); if (i < 0) i = auto; auto = i + 1;
+      if (i > 30) continue;
+      const t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0];
+      let val = "";
+      if (t === "s") val = ss[+(v && v.textContent)] ?? "";
+      else if (t === "inlineStr") val = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+      else val = v ? v.textContent : "";
+      row[i] = cellText(val);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+function readCsv(buf){
+  let text;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch(e) { text = new TextDecoder("windows-1252").decode(buf); }
+  text = text.replace(/^﻿/, "");
+  const firstLine = text.split(/\r?\n/)[0] || "";
+  const cnt = ch => firstLine.split(ch).length;
+  const sep = [";", "\t", ","].sort((a, b) => cnt(b) - cnt(a))[0];
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep) { row.push(cellText(cur)); cur = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cellText(cur)); rows.push(row); row = []; cur = ""; if (rows.length > 20000) break; }
+    else cur += ch;
+  }
+  if (cur || row.length) { row.push(cellText(cur)); rows.push(row); }
+  return rows;
+}
+/* entende as colunas: com títulos (Código / Descrição / Código de barras) ou na ordem A, B, C */
+function rowsToItems(rows){
+  const H = (rows[0] || []).map(x => nameKey(x));
+  const isHead = H.some(h => /^(cod|codigo|descri|produto|nome|item|ean|gtin|barra)/.test(h) || /barra/.test(h));
+  let ci = 0, ni = 1, ei = 2;
+  if (isHead) {
+    const f = re => H.findIndex(h => re.test(h));
+    const e = f(/barra|ean|gtin/), n = f(/descri|produto|nome|^item/), c = H.findIndex((h, i) => /^cod|codigo|^sku|interno/.test(h) && i !== e);
+    ei = e; ni = n >= 0 ? n : 1; ci = c;
+  }
+  const items = [];
+  rows.slice(isHead ? 1 : 0).forEach((r, k) => {
+    r = r || [];
+    if (!r.some(v => String(v ?? "").trim())) return;   // linha vazia
+    items.push({ line: k + (isHead ? 2 : 1), code: ci >= 0 ? cleanCode(r[ci]) : "", name: cleanText(r[ni], 120).toUpperCase(), ean: ei >= 0 ? digits(r[ei]) : "" });
+  });
+  return items;
+}
+function planImport(items){
+  const plan = { novos: [], atualizados: [], iguais: 0, conflitos: [], ignorados: [] };
+  const used = new Set(), seen = new Set();
+  const byCode = new Map(), byEan = new Map(), byName = new Map();
+  for (const p of S.products) {
+    if (p.code) byCode.set(p.code.toUpperCase(), p);
+    if (p.barCode) byEan.set(p.barCode, p);
+    byName.set(nameKey(p.name), p);
+  }
+  for (const it of items) {
+    if (!it.name) { plan.ignorados.push(`Linha ${it.line}: sem descrição`); continue; }
+    const k = "n:" + nameKey(it.name), kc = it.code ? "c:" + it.code.toUpperCase() : null, ke = it.ean ? "e:" + it.ean : null;
+    if ([k, kc, ke].some(x => x && seen.has(x))) { plan.ignorados.push(`Linha ${it.line}: repetida na planilha (${it.name})`); continue; }
+    [k, kc, ke].forEach(x => x && seen.add(x));
+    const p = (it.code && byCode.get(it.code.toUpperCase())) || (it.ean && byEan.get(it.ean)) || byName.get(nameKey(it.name));
+    if (!p) { plan.novos.push(it); continue; }
+    if (used.has(p.id)) { plan.ignorados.push(`Linha ${it.line}: mesmo produto de outra linha (${p.name})`); continue; }
+    used.add(p.id);
+    const ch = [];
+    if (it.code && it.code !== (p.code || "")) ch.push({ f: "code", label: "código", de: p.code || "vazio", para: it.code });
+    if (it.ean && it.ean !== (p.barCode || "")) {
+      const other = byEan.get(it.ean);
+      if (other && other.id !== p.id) plan.ignorados.push(`Linha ${it.line}: código de barras ${it.ean} já é do item ${other.name}`);
+      else ch.push({ f: "barCode", label: "código de barras", de: p.barCode || "vazio", para: it.ean });
+    }
+    if (ch.length) plan.atualizados.push({ p, ch });
+    if (nameKey(it.name) !== nameKey(p.name)) plan.conflitos.push({ p, site: p.name, planilha: it.name, escolha: null });
+    if (!ch.length && nameKey(it.name) === nameKey(p.name)) plan.iguais++;
+  }
+  return plan;
+}
+function insertProductNear(item){
+  const i = suggestPosition(item.name), anchor = i >= 0 ? S.products[i] : null;
+  if (i >= 0) S.products.splice(i + 1, 0, item); else S.products.push(item);
+  for (const k of Object.keys(S.orders)) {
+    const o = S.orders[k], j = anchor ? o.indexOf(anchor.id) : -1;
+    if (j >= 0) o.splice(j + 1, 0, item.id); else o.push(item.id);
+  }
+}
+function applyImport(plan){
+  let novos = 0, atual = 0, nomes = 0;
+  for (const it of plan.novos) { insertProductNear({ id: newId(), name: it.name, barCode: it.ean, code: it.code }); novos++; }
+  for (const u of plan.atualizados) { for (const c of u.ch) u.p[c.f] = c.para; atual++; }
+  for (const c of plan.conflitos) if (c.escolha === "planilha") { c.p.name = c.planilha; nomes++; }
+  save(); close(); render();
+  toast(`Importado: ${novos} novo(s), ${atual + nomes} atualizado(s)`);
+}
+function importPreview(plan){
+  const li = s => `<li>${s}</li>`;
+  const sec = (title, n, body, open) => n ? `<details class="impsec" ${open ? "open" : ""}><summary>${title} <b>(${n})</b></summary>${body}</details>` : "";
+  const nothing = !plan.novos.length && !plan.atualizados.length && !plan.conflitos.length;
+  modal(`<h2>Importar produtos</h2>
+    <p class="sub" style="margin-top:-6px"><b style="color:#2E7D32">${plan.novos.length} novos</b> · <b>${plan.atualizados.length} atualizados</b> · ${plan.iguais} iguais${plan.conflitos.length ? ` · <b style="color:var(--red)">${plan.conflitos.length} com descrição diferente</b>` : ""}${plan.ignorados.length ? ` · ${plan.ignorados.length} ignorados` : ""}</p>
+    ${plan.conflitos.length ? `<div class="impsec" style="border-color:#E8B4B2"><b>Descrição diferente: escolha qual manter</b>
+      <div class="row" style="margin:8px 0"><button class="btn btn-white" data-all="planilha" style="font-size:13px">Usar todas da planilha</button><button class="btn btn-white" data-all="site" style="font-size:13px">Manter todas do site</button></div>
+      ${plan.conflitos.map((c, i) => `<div class="impc">
+        <label><input type="radio" name="c${i}" value="site"> <span><small>No site</small>${esc(c.site)}</span></label>
+        <label><input type="radio" name="c${i}" value="planilha"> <span><small>Na planilha</small>${esc(c.planilha)}</span></label></div>`).join("")}</div>` : ""}
+    ${sec("Novos", plan.novos.length, `<ul>${plan.novos.slice(0, 300).map(it => li(`${esc(it.name)}<small>${[it.code && "cód. " + esc(it.code), it.ean && "barras " + esc(it.ean)].filter(Boolean).join(" · ") || "sem códigos"}</small>`)).join("")}</ul>`, plan.novos.length <= 15)}
+    ${sec("Atualizados", plan.atualizados.length, `<ul>${plan.atualizados.slice(0, 300).map(u => li(`${esc(u.p.name)}<small>${u.ch.map(c => `${c.label}: ${esc(c.de)} → ${esc(c.para)}`).join(" · ")}</small>`)).join("")}</ul>`, plan.atualizados.length <= 15)}
+    ${sec("Ignorados", plan.ignorados.length, `<ul>${plan.ignorados.slice(0, 300).map(s => li(esc(s))).join("")}</ul>`, false)}
+    <p class="hint">Nada é apagado: produtos que não estão na planilha continuam no site, com preços e fotos.</p>
+    <p class="hint" data-falta style="color:var(--red)" hidden>Escolha a descrição de todos os itens acima.</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange" data-ok ${nothing ? "disabled" : ""}>Confirmar</button></div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelectorAll("[data-all]").forEach(b => b.onclick = () => m.querySelectorAll(`input[value="${b.dataset.all}"]`).forEach(r => { r.checked = true; }));
+    m.querySelector("[data-ok]").onclick = () => {
+      let falta = false;
+      plan.conflitos.forEach((c, i) => { const r = m.querySelector(`input[name="c${i}"]:checked`); c.escolha = r ? r.value : null; if (!r) falta = true; });
+      if (falta) { m.querySelector("[data-falta]").hidden = false; m.querySelector("[data-falta]").scrollIntoView({ block: "nearest" }); return; }
+      applyImport(plan);
+    };
+  });
+}
+const importIn = document.createElement("input");
+importIn.type = "file"; importIn.accept = ".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"; importIn.hidden = true;
+document.body.appendChild(importIn);
+function openImport(){ importIn.value = ""; importIn.click(); }
+importIn.addEventListener("change", async () => {
+  const f = importIn.files && importIn.files[0]; if (!f) return;
+  if (f.size > 10 * 1024 * 1024) { toast("Arquivo muito grande (máximo 10 MB)."); return; }
+  try {
+    const buf = await f.arrayBuffer();
+    const isZip = new Uint8Array(buf.slice(0, 2))[0] === 0x50 && new Uint8Array(buf.slice(0, 2))[1] === 0x4b;
+    if (!isZip && /\.xls$/i.test(f.name)) { toast("Esse é um Excel antigo (.xls). Salve como .xlsx e tente de novo."); return; }
+    const rows = isZip ? await readXlsx(buf) : readCsv(buf);
+    const items = rowsToItems(rows);
+    if (!items.length) { toast("Não achei produtos nesse arquivo."); return; }
+    importPreview(planImport(items));
+  } catch(e) {
+    toast("Não consegui ler esse arquivo. Use Excel (.xlsx) ou .csv com: Código, Descrição, Código de barras.");
+  }
+});
+
+/* ---------- salvar / compartilhar arquivo ---------- */
+let downloadsCap;   // undefined = não verificado, null = indisponível
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("downloads").then(d => { downloadsCap = d; }).catch(() => { downloadsCap = null; });
+}
+async function saveFile(blob, filename){
+  if (downloadsCap) {
+    try { await downloadsCap.save({ filename, data: blob }); return; }
+    catch(e) {
+      try { await downloadsCap.save({ filename, data: new Uint8Array(await blob.arrayBuffer()) }); return; }
+      catch(e2) { toast("Download cancelado ou não permitido."); return; }
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Arquivo salvo: " + filename);
+}
+function canShareFiles(){
+  try { return !!(navigator.canShare && navigator.canShare({ files: [new File([""], "t.xlsx", {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})] })); }
+  catch(e) { return false; }
+}
+async function shareFile(blob, filename){
+  try { await navigator.share({ files: [new File([blob], filename, {type: blob.type})], title: filename }); }
+  catch(e) { if (e && e.name !== "AbortError") { toast("Não deu para compartilhar. Salvando o arquivo…"); saveFile(blob, filename); } }
+}
+const safeName = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9_]/g, "_");
+
+/* ---------- fotos (IndexedDB: guarda só a última foto de cada item em cada concorrente) ---------- */
+const PhotoDB = (() => {
+  let dbp = null;
+  function db(){
+    if (!dbp) dbp = new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open("dscanner-fotos", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("fotos");
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      } catch(e) { rej(e); }
+    });
+    return dbp;
+  }
+  async function run(mode, fn){
+    const d = await db();
+    return new Promise((res, rej) => {
+      const t = d.transaction("fotos", mode); const req = fn(t.objectStore("fotos"));
+      t.oncomplete = () => res(req ? req.result : undefined); t.onerror = () => rej(t.error);
+    });
+  }
+  return {
+    put: (k, blob) => run("readwrite", s => s.put(blob, UKEY + "|" + k)),
+    get: k => run("readonly", s => s.get(UKEY + "|" + k)),
+    del: k => run("readwrite", s => s.delete(UKEY + "|" + k)).catch(() => {}),
+    getRaw: k => run("readonly", s => s.get(k)),
+  };
+})();
+const photoKey = (cid, pid) => cid + ":" + pid;
+const urlCache = new Map();
+async function photoURL(key){
+  const stamp = S.photos[key]; if (!stamp) return null;
+  const c = urlCache.get(key); if (c && c.stamp === stamp) return c.url;
+  try {
+    const blob = await PhotoDB.get(key);
+    if (blob) {
+      if (c) URL.revokeObjectURL(c.url);
+      const url = URL.createObjectURL(blob); urlCache.set(key, { stamp, url }); return url;
+    }
+  } catch(e) {}
+  if (!CLOUD) return null;
+  try {   // foto tirada em outro aparelho: baixa (com o login) e guarda no aparelho
+    const blob = await Cloud.getPhoto(key);
+    try { await PhotoDB.put(key, blob); } catch(e) {}
+    if (c) URL.revokeObjectURL(c.url);
+    const url = URL.createObjectURL(blob); urlCache.set(key, { stamp, url }); return url;
+  } catch(e) { return null; }
+}
+function fillThumbs(root){
+  root.querySelectorAll("img[data-photo]").forEach(async img => {
+    const u = await photoURL(img.dataset.photo);
+    if (u) { img.onerror = () => img.closest(".thumb")?.remove(); img.src = u; } else img.closest(".thumb")?.remove();
+  });
+}
+function removePhoto(cid, pid){
+  const k = photoKey(cid, pid);
+  if (S.photos[k]) { delete S.photos[k]; PhotoDB.del(k); if (CLOUD) Cloud.delPhoto(USER, k); }
+}
+function removeCompetitorPhotos(cid){
+  Object.keys(S.photos).filter(k => k.startsWith(cid + ":")).forEach(k => { delete S.photos[k]; PhotoDB.del(k); if (CLOUD) Cloud.delPhoto(USER, k); });
+}
+function photoViewer(key, title){
+  modal(`<h2 style="font-size:16px">${esc(title)}</h2><img class="big-photo" data-photo="${key}" alt="">
+    <div class="foot"><button class="btn btn-orange" data-x>Fechar</button></div>`,
+    m => { m.querySelector("[data-x]").onclick = close; fillThumbs(m); });
+}
+
+/* ---------- imagem ---------- */
+async function fileToImage(file){
+  const url = URL.createObjectURL(file); const img = new Image();
+  await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = url; });
+  return { img, url };
+}
+function imageToCanvas(img, max, gray, upscale){
+  const s = upscale ? max / Math.max(img.naturalWidth, img.naturalHeight) : Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, c.width, c.height);
+  if (gray) {
+    const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) {
+      let v = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+      v = Math.max(0, Math.min(255, (v - 128) * 1.4 + 128));   // mais contraste
+      a[i] = a[i+1] = a[i+2] = v;
+    }
+    g.putImageData(d, 0, 0);
+  }
+  return c;
+}
+/* inverte só as áreas escuras da etiqueta (preço branco em fundo preto vira preto em fundo branco) */
+function darkInverted(src){
+  const c = imageToCanvas(src, 1000, false, true), W = c.width, H = c.height;
+  const g = c.getContext("2d"), d = g.getImageData(0, 0, W, H), a = d.data;
+  const gray = new Float32Array(W * H);
+  for (let i = 0, j = 0; j < gray.length; i += 4, j++) gray[j] = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+  const I = new Float64Array((W + 1) * (H + 1));
+  for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { row += gray[y*W + x]; I[(y+1)*(W+1) + x+1] = I[y*(W+1) + x+1] + row; } }
+  const r = Math.round(W * 0.08);
+  let mask = new Uint8Array(W * H), dark = 0;
+  for (let y = 0; y < H; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(H, y + r + 1);
+    for (let x = 0; x < W; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(W, x + r + 1);
+      const s = I[y1*(W+1) + x1] - I[y0*(W+1) + x1] - I[y1*(W+1) + x0] + I[y0*(W+1) + x0];
+      if (s / ((x1 - x0) * (y1 - y0)) < 100) { mask[y*W + x] = 1; dark++; }
+    }
+  }
+  if (dark < W * H * 0.03) return null;   // não tem área escura
+  const k = 4, tmp = new Uint8Array(W * H);   // alarga a máscara um pouco
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let m = 0; for (let dx = -k; dx <= k && !m; dx++) { const xx = x + dx; if (xx >= 0 && xx < W && mask[y*W + xx]) m = 1; } tmp[y*W + x] = m; }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let m = 0; for (let dy = -k; dy <= k && !m; dy++) { const yy = y + dy; if (yy >= 0 && yy < H && tmp[yy*W + x]) m = 1; } mask[y*W + x] = m; }
+  for (let j = 0, i = 0; j < gray.length; j++, i += 4) {
+    let v = mask[j] ? 255 - gray[j] : gray[j];
+    v = Math.max(0, Math.min(255, (v - 128) * 1.4 + 128));
+    a[i] = a[i+1] = a[i+2] = v;
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+const canvasToBlob = (c, q) => new Promise(r => c.toBlob(r, "image/jpeg", q));
+
+/* ---------- leitura de texto (OCR) no próprio navegador ---------- */
+let ocrWorkerP = null, ocrLogger = null;
+function loadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+}
+function getOCR(){
+  if (!ocrWorkerP) {
+    ocrWorkerP = (async () => {
+      if (!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
+      const w = await Tesseract.createWorker("por", 1, { logger: m => ocrLogger && ocrLogger(m) });
+      return w;
+    })();
+    ocrWorkerP.catch(() => { ocrWorkerP = null; });
+  }
+  return ocrWorkerP;
+}
+function warmOCR(){ if (navigator.onLine !== false) setTimeout(() => getOCR().catch(() => {}), 1500); }
+
+/* Acha os valores grandes da etiqueta (os preços) */
+/* linhas da etiqueta que têm números que NÃO são o preço */
+const NOT_PRICE = /trib|m[eé]dia|litro|cxa|caixa|fdo|fardo|emb\b|embal|nesta|\bkg\b|un\.?\s*r\$|c\/\s*\d/i;
+function findPrices(words, text, lines){
+  const bad = new Set();
+  for (const l of lines || []) if (NOT_PRICE.test(String(l.text || ""))) for (const w of l.words || []) if (w.bbox) bad.add(w.bbox.x0 + ":" + w.bbox.y0);
+  text = String(text || "").split("\n").filter(l => !NOT_PRICE.test(l)).join("\n");
+  words = (words || []).filter(w => !(w.bbox && bad.has(w.bbox.x0 + ":" + w.bbox.y0)));
+  const W = (words || []).map(w => ({ t: String(w.text || "").trim(), b: w.bbox || {x0:0,y0:0,x1:0,y1:0} }))
+    .map(w => ({ ...w, h: w.b.y1 - w.b.y0, cx: (w.b.x0 + w.b.x1) / 2, cy: (w.b.y0 + w.b.y1) / 2 }));
+  const fix = s => s.replace(/[Oo]/g, "0").replace(/[Il|]/g, "1").replace(/[Ss](?=\d)/g, "5");
+  const cands = [];
+  W.forEach((w, i) => {
+    const t = fix(w.t);
+    let m = t.match(/(\d{1,4})[,.](\d{2})(?!\d)/);
+    if (m) { cands.push({ v: +(m[1] + "." + m[2]), h: w.h, cx: w.cx, cy: w.cy, y0: w.b.y0 }); return; }
+    // centavos separados/pequenos: "21" "90" ou "21" ",90"
+    m = t.match(/^(?:R\$)?(\d{1,4})[,.]?$/);
+    if (m) {
+      const n = W[i+1]; if (!n) return;
+      const nm = fix(n.t).match(/^[,.]?(\d{2})$/);
+      const sameLine = n.b.y0 < w.b.y1 && n.b.x0 >= w.b.x1 - 4 && n.b.x0 - w.b.x1 < w.h * 1.5;
+      if (nm && sameLine) cands.push({ v: +(m[1] + "." + nm[1]), h: w.h, cx: w.cx, cy: w.cy, y0: w.b.y0 });
+    }
+  });
+  let ok = cands.filter(c => c.v >= 0.1 && c.v < 10000);
+  if (!ok.length) {
+    const all = [...fix(text || "").matchAll(/(\d{1,4})\s?[,.]\s?(\d{2})(?!\d)/g)].map(m => +(m[1] + "." + m[2])).filter(v => v >= 0.1);
+    return { vals: all };
+  }
+  // só os números grandes (os preços); descarta "média litro", "trib", "cxa"
+  const maxH = Math.max(...ok.map(c => c.h));
+  return { vals: [...new Set(ok.filter(c => c.h >= maxH * 0.6).map(c => c.v))] };
+}
+/* junta as leituras e escolhe o MENOR preço (descarta números que não parecem preço da mesma etiqueta) */
+function lowestPrice(lists){
+  const all = lists.flat().filter(v => v > 0);
+  if (!all.length) return null;
+  const mx = Math.max(...all);
+  return Math.min(...all.filter(v => v >= mx * 0.5));
+}
+
+/* Código de barras: leitor do navegador (Chrome/Android) ou números lidos na etiqueta */
+function validEAN(s){ return /^\d{13}$/.test(s) && ean13Check(s.slice(0, 12)) === s[12] || /^\d{8}$/.test(s); }
+async function readBarcode(file){
+  try {
+    if (!("BarcodeDetector" in window)) return null;
+    const fmts = await BarcodeDetector.getSupportedFormats();
+    const want = ["ean_13", "ean_8", "upc_a"].filter(f => fmts.includes(f)); if (!want.length) return null;
+    const bmp = await createImageBitmap(file);
+    const r = await new BarcodeDetector({ formats: want }).detect(bmp);
+    const hit = r.find(x => validEAN(x.rawValue) || /^\d{12}$/.test(x.rawValue));
+    if (!hit) return null;
+    const code = hit.rawValue.length === 12 ? "0" + hit.rawValue : hit.rawValue;
+    return { code, box: hit.boundingBox, w: bmp.width, h: bmp.height };
+  } catch(e) { return null; }
+}
+function eanFromText(text){
+  const m = (text || "").replace(/(\d)\s(?=\d)/g, "$1").match(/\d{13}|\d{8}/g) || [];
+  return m.find(validEAN) || null;
+}
+
+/* Acha o produto da minha lista que mais combina com o texto da etiqueta */
+const STOP = new Set(["de","da","do","das","dos","com","e","em","para","un","und","pct","cx","rs","r","preco","oferta","kg","g","ml","l","lt","por","t1","tp1","tipo"]);
+function tokens(s){
+  return norm(s).replace(/(\d+)[.,]?(\d*)\s*(kg|g|gr|ml|l|lt|lts)\b/g, (_, a, b, u) => a + (b ? "." + b : "") + ({gr:"g",lt:"l",lts:"l"}[u] || u))
+    .split(/[^a-z0-9.]+/).map(t => t.replace(/^\.+|\.+$/g, "")).filter(t => t.length >= 2 && !STOP.has(t));
+}
+const isSize = t => /^\d+(\.\d+)?(kg|g|ml|l)$/.test(t);
+function tokScore(pt, tagSet){
+  if (tagSet.has(pt)) return 1;
+  if (isSize(pt)) return 0;
+  for (const t of tagSet) {
+    if (t.length >= 3 && pt.startsWith(t)) return 0.75;   // abreviação na etiqueta: "arr" = "arroz"
+    if (pt.length >= 3 && t.startsWith(pt)) return 0.9;    // abreviação no meu cadastro: "parb" = "parboilizado"
+    if (pt.length >= 5 && t.length >= 5 && lev(pt, t) <= 1) return 0.85;   // erro de leitura
+  }
+  return 0;
+}
+function lev(a, b){
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const d = Array.from({length: a.length + 1}, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function matchProducts(text, cid, ean){
+  const tagToks = tokens(text), tagSet = new Set(tagToks);
+  const digits = (text.match(/\d{8,14}/g) || []); if (ean) digits.push(ean);
+  // 1º: código de barras já vinculado (vale para todos os concorrentes)
+  if (ean) {
+    const al = [...S.aliases].reverse().find(a => a.ean === ean);
+    const p = al && S.products.find(x => x.id === al.productId);
+    if (p) return [{ p, s: 1000, linked: true }];
+  }
+  const scores = new Map();
+  for (const p of S.products) {
+    let s = 0;
+    if (p.barCode && digits.includes(p.barCode)) s = 100;
+    else {
+      const pt = tokens(p.name); if (!pt.length) continue;
+      let got = 0, w = 0, hits = 0;
+      for (const t of pt) { const k = isSize(t) ? 2 : 1; w += k; const sc = tokScore(t, tagSet); got += k * sc; if (sc > 0) hits++; }
+      s = got / w + 0.05 * hits;   // mais palavras em comum = desempate
+      const sizes = pt.filter(isSize);
+      if (sizes.length && sizes.some(z => !tagSet.has(z)) && tagToks.some(isSize)) s *= 0.6;   // tamanho diferente
+    }
+    scores.set(p.id, s);
+  }
+  return [...scores.entries()].filter(([, s]) => s > 0.25).sort((a, b) => b[1] - a[1]).map(([id, s]) => ({ p: S.products.find(x => x.id === id), s }));
+}
+/* ---------- vínculo pela DESCRIÇÃO da etiqueta ---------- */
+// palavras que aparecem em toda etiqueta e não dizem qual é o produto
+const GENERIC = new Set("preco precos unidade unidades partir varejo atacado media litro litros trib cxa und uni oferta ref promocao valido ate por com para quilo cada leve pague".split(" "));
+const GEN = [...GENERIC];
+function grams(t){ const s = " " + t + " "; const g = new Set(); for (let i = 0; i < s.length - 2; i++) g.add(s.slice(i, i + 3)); return g; }
+function wsim(a, b){   // parecença entre palavras (aguenta erros de leitura)
+  if (a === b) return 1;
+  const A = grams(a), B = grams(b); let n = 0; for (const x of A) if (B.has(x)) n++;
+  return 2 * n / (A.size + B.size);
+}
+function descTokens(text){
+  return [...new Set(norm(text || "").replace(/[^a-z\s]/g, " ").split(/\s+/)
+    .filter(t => t.length >= 3 && !GENERIC.has(t) && !GEN.some(g => g.length >= 5 && wsim(t, g) >= 0.5)))].slice(0, 60);
+}
+function sampleScore(newToks, toks, df, N){
+  let tot = 0, got = 0;
+  for (const t of toks) {
+    const w = Math.log((N + 1) / ((df.get(t) || 0) + 0.5));   // palavra comum em várias etiquetas vale menos
+    if (w <= 0) continue;
+    let best = 0; for (const u of newToks) { const s = wsim(t, u); if (s > best) best = s; }
+    tot += w; got += w * (best >= 0.45 ? best : 0);
+  }
+  return tot ? got / tot : 0;
+}
+function linkMatch(text, cid){
+  const L = S.links.filter(l => l.cid === cid); if (!L.length) return [];
+  const q = descTokens(text); if (!q.length) return [];
+  const df = new Map(); for (const l of L) for (const t of l.toks) df.set(t, (df.get(t) || 0) + 1);
+  const best = new Map();
+  for (const l of L) { const s = sampleScore(q, l.toks, df, L.length); if (s > (best.get(l.pid) || 0)) best.set(l.pid, s); }
+  return [...best.entries()].map(([pid, s]) => ({ p: S.products.find(x => x.id === pid), s })).filter(r => r.p).sort((a, b) => b.s - a.s);
+}
+function rememberLink(cid, text, pid){
+  const toks = descTokens(text); if (!toks.length) return;
+  // tira vínculos de OUTROS itens com etiqueta quase igual (foi um vínculo errado corrigido)
+  S.links = S.links.filter(l => !(l.cid === cid && l.pid !== pid && sampleScore(toks, l.toks, new Map(), 1) >= 0.6));
+  S.links.push({ cid, pid, toks, at: Date.now() });
+  const mine = S.links.filter(l => l.cid === cid && l.pid === pid);
+  if (mine.length > 4) { const old = mine[0]; S.links = S.links.filter(l => l !== old); }   // guarda as 4 últimas fotos
+  if (S.links.length > 5000) S.links.splice(0, S.links.length - 5000);
+}
+function rememberAlias(cid, text, productId, ean){
+  if (!ean) return;
+  S.aliases = S.aliases.filter(a => a.ean !== ean);
+  S.aliases.push({ cid, ean, toks: [], productId });
+}
+
+/* ---------- salvar preço (sempre fica o último) ---------- */
+function setPrice(cid, prod, price, check){
+  const ex = priceFor(cid, prod);
+  const now = Date.now();
+  if (ex) { ex.price = price; ex.price2 = null; ex.check = !!check; ex.notFound = false; ex.updatedAt = now; ex.priceAt = now; ex.productId = prod.id; }
+  else S.prices.push({ id: newId(), competitorId: cid, productId: prod.id, name: prod.name, barCode: prod.barCode, price, price2: null, check: !!check, updatedAt: now, priceAt: now });
+}
+
+/* ---------- modais ---------- */
+const layer = document.getElementById("layer");
+function modal(html, onMount){
+  layer.innerHTML = `<div class="scrim"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  const scrim = layer.firstChild;
+  scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
+  onMount && onMount(scrim.querySelector(".modal"));
+  const first = scrim.querySelector("input,select"); first && setTimeout(() => first.focus(), 30);
+}
+function close(){ layer.innerHTML = ""; }
+document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+
+function confirmBox(title, text, okLabel, onOk){
+  modal(`<h2>${esc(title)}</h2><p class="sub">${esc(text)}</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-red" data-ok>${esc(okLabel)}</button></div>`,
+    m => { m.querySelector("[data-x]").onclick = close; m.querySelector("[data-ok]").onclick = () => { close(); onOk(); }; });
+}
+
+/* Preço: igual ao app – digite só números, os 2 últimos são centavos */
+function bindPriceInput(inp, initialCents, onEnter){
+  let digits = initialCents > 0 ? String(initialCents) : "";
+  const fmt = () => brl((parseInt(digits || "0", 10)) / 100);
+  const put = () => { inp.value = fmt(); const L = inp.value.length; try { inp.setSelectionRange(L, L); } catch(e) {} };
+  inp.value = fmt();
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); onEnter && onEnter(); return; }
+    if (e.key === "Backspace") { e.preventDefault(); digits = digits.slice(0, -1); put(); return; }
+    if (/^\d$/.test(e.key)) { e.preventDefault(); if (digits.length < 9) digits = (digits + e.key).replace(/^0+/, ""); put(); return; }
+  });
+  inp.addEventListener("input", () => { digits = inp.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 9); put(); });
+  inp.addEventListener("focus", () => setTimeout(put, 0));
+  return {
+    value: () => parseInt(digits || "0", 10) / 100,
+    set: v => { digits = v > 0 ? String(Math.round(v * 100)) : ""; inp.value = fmt(); }
+  };
+}
+function priceDialog(title, initial, onSave){
+  const atual = initial && !initial.notFound && initial.price > 0 ? initial.price : null;
+  modal(`<h2>${esc(title)}</h2>
+    ${atual ? `<p class="sub" style="margin:-8px 0 14px">Preço atual: <b style="color:var(--primary)">${brl(atual)}</b></p>` : ""}
+    <div class="field"><label>Preço novo (o menor da etiqueta)</label><input inputmode="numeric" autocomplete="off" data-p></div>
+    <p class="hint">Digite só os números. Ex.: 1 1 3 9 = R$ 11,39</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange" data-ok>Salvar</button></div>`,
+  m => {
+    const ok = () => { if (!(pi.value() > 0)) { toast("Informe o preço"); return; } close(); onSave(pi.value()); };
+    const pi = bindPriceInput(m.querySelector("[data-p]"), 0, ok);   // abre vazio: é só digitar o preço novo
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-ok]").onclick = ok;
+  });
+}
+
+/* ---------- câmera e galeria ---------- */
+const MAX_PHOTO_MB = 25, MAX_BATCH = 60;
+function acceptImages(files){
+  const ok = [], bad = [];
+  for (const f of files) (f && /^image\//.test(f.type || "image/") && f.size > 0 && f.size <= MAX_PHOTO_MB * 1048576 ? ok : bad).push(f);
+  if (bad.length) toast(`${bad.length} arquivo(s) ignorado(s): só fotos de até ${MAX_PHOTO_MB} MB`);
+  if (ok.length > MAX_BATCH) { toast(`Máximo de ${MAX_BATCH} fotos por vez`); return ok.slice(0, MAX_BATCH); }
+  return ok;
+}
+const cam = document.getElementById("cam"), gal = document.getElementById("gal");
+let camTarget = null, camCid = null;   // produto fixo (foto de um item) ou null (modo rápido)
+function needCompetitor(cid){
+  cid = cid || S.selectedCompetitorId;
+  if (!cid || !S.competitors.some(c => c.id === cid)) { toast("Selecione ou crie o concorrente primeiro"); newCompetitorDialog(); return null; }
+  return cid;
+}
+function openCamera(product, cid){
+  cid = needCompetitor(cid); if (!cid) return;
+  camTarget = product || null; camCid = cid; cam.value = ""; cam.click();
+}
+function openGallery(){
+  const cid = needCompetitor(); if (!cid) return;
+  camCid = cid; gal.value = ""; gal.click();
+}
+cam.addEventListener("change", () => {
+  const f = acceptImages([...cam.files])[0]; if (!f) return;
+  if (camTarget) photoDialog(f, camTarget, camCid);
+  else { quickAdd([f], camCid); quickNextModal(camCid); }
+});
+gal.addEventListener("change", () => {
+  const fs = acceptImages([...gal.files]); if (!fs.length) return;
+  quickAdd(fs, camCid); toast(`${fs.length} foto(s) na fila de leitura`);
+});
+/* foto de prateleira: várias etiquetas numa foto (vai direto para o Claude; o leitor do celular não lê várias) */
+const shelfIn = document.getElementById("shelfIn");
+function openShelf(){
+  const cid = needCompetitor(); if (!cid) return;
+  if (!aiAvailable()) { toast(aiReady() ? "Limite de ajuda do Claude atingido hoje. Use fotos de perto." : "Foto de prateleira precisa da ajuda do Claude."); return; }
+  camCid = cid; shelfIn.value = ""; shelfIn.click();
+}
+shelfIn.addEventListener("change", () => {
+  const fs = acceptImages([...shelfIn.files]); if (!fs.length) return;
+  quickAdd(fs, camCid, "shelf"); toast(`🗂 ${fs.length} foto(s) de prateleira na fila`);
+});
+
+/* ---------- modo rápido: as fotos entram numa fila e são lidas em segundo plano ---------- */
+const Q = { items: [], active: 0, ok: 0, pend: 0, check: 0, hideT: null };
+function quickAdd(files, cid, kind){
+  for (const f of files) Q.items.push({ file: f, cid, kind: kind || "tag" });
+  updateQBar(); runQueue();
+}
+/* duas fotos ao mesmo tempo: enquanto uma espera o Claude, a outra já é lida no celular */
+function runQueue(){
+  while (Q.active < 2 && Q.items.length) {
+    const it = Q.items.shift(); Q.active++;
+    Promise.resolve().then(() => processQuick(it)).catch(() => {})
+      .finally(() => { Q.active--; updateQBar(); runQueue(); });
+  }
+  updateQBar();
+}
+function updateQBar(){
+  const el = document.getElementById("qbar"); if (!el) return;
+  clearTimeout(Q.hideT);
+  const tot = Q.ok + Q.pend, left = Q.items.length + Q.active;
+  if (!left && !tot) { el.hidden = true; return; }
+  el.hidden = false;
+  const parts = [];
+  if (left) parts.push(`<span class="spin"></span> Lendo ${left} foto${left > 1 ? "s" : ""}…`);
+  if (Q.ok) parts.push(`<span style="color:var(--ok)">✓ ${Q.ok} salva${Q.ok > 1 ? "s" : ""}</span>`);
+  if (Q.check) parts.push(`<span style="color:var(--warn)">${Q.check} p/ conferir</span>`);
+  if (Q.pend) parts.push(`<span style="color:var(--red)">⚠ ${Q.pend} não reconhecida${Q.pend > 1 ? "s" : ""}</span>`);
+  el.innerHTML = parts.join(" · ");
+  if (!left) Q.hideT = setTimeout(() => { Q.ok = Q.pend = Q.check = 0; el.hidden = true; }, 8000);
+}
+/* quem é o item da etiqueta? (vínculo pela descrição; código de barras ajuda se tiver) */
+function identify(ctx){
+  const byEan = ctx.ean && [...S.aliases].reverse().find(a => a.ean === ctx.ean);
+  const byEanP = byEan && S.products.find(p => p.id === byEan.productId) || (ctx.ean && S.products.find(p => p.barCode === ctx.ean));
+  const L = linkMatch(ctx.text, ctx.cid);
+  let sure = false;
+  if (byEanP) { ctx.chosen = byEanP; sure = true; }
+  else if (L.length && L[0].s >= 0.30 && L[0].s >= 1.8 * (L[1]?.s || 0)) { ctx.chosen = L[0].p; sure = true; }
+  else if (L.length && L[0].s >= 0.15) ctx.chosen = L[0].p;
+  const byName = matchProducts(ctx.text, ctx.cid, null);
+  ctx.ranked = [...L.filter(x => x.s >= 0.12), ...byName.filter(x => !L.some(y => y.p === x.p))];
+  if (!ctx.chosen && byName.length && byName[0].s >= 0.5) ctx.chosen = byName[0].p;
+  return sure;
+}
+async function processQuick(it){
+  if (it.kind === "shelf") return processShelf(it);
+  const comp = S.competitors.find(c => c.id === it.cid); if (!comp) return;
+  let loaded; try { loaded = await fileToImage(it.file); } catch(e) { toast("Não consegui abrir uma foto"); return; }
+  const ctx = { cid: it.cid, comp, file: it.file, loaded, fixedProduct: null, chosen: null, text: "", ean: null, price: null, ranked: [] };
+  try { Object.assign(ctx, await analyzeTag(it.file, loaded.img, () => {})); } catch(e) { ctx.ocrFailed = true; }
+  const saveOne = async (c, prod, price, flag) => {
+    const chk = !!flag || bigChange(c.cid, prod, price);
+    await commit(c, prod, price, chk);
+    Q.ok++; if (chk) Q.check++;
+    toast(`✓ ${prod.name}: ${brl(price)}${chk ? " · conferir" : ""}`);
+  };
+  // 1º: leitor do celular (grátis)
+  let sure = !ctx.ocrFailed && identify(ctx);
+  if (sure && ctx.price && !ctx.darkUnread) { await saveOne(ctx, ctx.chosen, ctx.price, false); return finishQuick(loaded); }
+  // 2º: ficou em dúvida -> pede ajuda ao Claude (se tiver)
+  if (aiAvailable()) {
+    const tags = await aiRead(loaded.img);
+    if (tags) {
+      const good = tags.filter(t => t.sure && t.p && t.price);
+      if (good.length) {
+        for (let i = 0; i < good.length; i++) {
+          const t = good[i];
+          // a descrição lida no celular só é guardada quando a foto tem uma etiqueta
+          const c = { ...ctx, ean: t.ean, text: good.length === 1 && tags.length === 1 ? ctx.text : "" };
+          await saveOne(c, t.p, t.price, false);
+        }
+        return finishQuick(loaded);
+      }
+      const t = tags.find(x => x.p) || tags[0];
+      if (t) { if (t.p) ctx.chosen = t.p; if (t.price) ctx.price = t.price; if (t.ean) ctx.ean = t.ean; sure = false; }
+    }
+  }
+  // 3º: sem ajuda do Claude: mantém o jeito antigo
+  if (sure && ctx.price) { await saveOne(ctx, ctx.chosen, ctx.price, ctx.darkUnread); return finishQuick(loaded); }
+  const offline = ctx.ocrFailed && navigator.onLine === false;
+  await addPending(ctx, sure, offline);
+  Q.pend++;
+  toast(offline ? "📴 Sem internet: a foto ficou guardada e será lida quando a internet voltar."
+    : sure ? `⚠ ${ctx.chosen.name}: não li o preço. Foi para Pendentes.` : "⚠ Não reconheci o item desta foto. Foi para Pendentes.");
+  finishQuick(loaded);
+}
+function finishQuick(loaded){ URL.revokeObjectURL(loaded.url); refreshResearch(); refreshIA(); }
+async function addPending(ctx, sure, retry){
+  const id = newId();
+  try { await PhotoDB.put("pend_" + id, await canvasToBlob(imageToCanvas(ctx.loaded.img, ctx.shelf ? 3200 : retry ? 2000 : 1280, false), retry || ctx.shelf ? 0.85 : 0.72)); } catch(e) {}
+  S.pending.push({ id, cid: ctx.cid, at: Date.now(), price: ctx.price || null, text: ctx.text || "", ean: ctx.ean || null,
+    darkUnread: !!ctx.darkUnread, guess: ctx.chosen ? ctx.chosen.id : null, motivo: sure ? "preço" : "item", retry: !!retry, shelf: !!ctx.shelf });
+  save();
+}
+/* fotos tiradas sem internet: quando a internet volta, entram de novo na fila de leitura */
+async function retryOfflinePending(){
+  if (!USER || navigator.onLine === false) return;
+  const list = S.pending.filter(p => p.retry && S.competitors.some(c => c.id === p.cid));
+  for (const p of list) {
+    let blob = null; try { blob = await PhotoDB.get("pend_" + p.id); } catch(e) {}
+    if (!blob) { p.retry = false; continue; }
+    S.pending = S.pending.filter(x => x.id !== p.id); PhotoDB.del("pend_" + p.id);
+    quickAdd([blob], p.cid, p.shelf ? "shelf" : "tag");
+  }
+  save(); refreshResearch();
+}
+window.addEventListener("online", () => setTimeout(retryOfflinePending, 2000));
+function quickNextModal(cid){
+  const comp = S.competitors.find(c => c.id === cid);
+  modal(`<div class="done" style="color:var(--primary)">📷 Foto enviada</div>
+    <p class="sub" style="text-align:center;margin:4px 0 0">${esc(comp ? comp.name : "")} · lendo em segundo plano.<br>Pode tirar a próxima.</p>
+    <div class="foot sticky">
+      <button class="btn btn-ghost" data-x>Concluir</button>
+      <button class="btn btn-orange" data-next style="flex:2">${IC.camera} Próxima foto</button>
+    </div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-next]").onclick = () => { close(); openCamera(null, cid); };
+  });
+}
+function refreshResearch(){
+  if (!USER) return;
+  const pb = document.getElementById("pendBtn");
+  if (pb) pb.outerHTML = pendBanner();
+  const nb = document.getElementById("pendBtn"); if (nb) nb.onclick = pendingScreen;
+  if (document.getElementById("list")) drawList();
+}
+function pendBanner(){
+  const cid = S.selectedCompetitorId;
+  const n = S.pending.filter(p => !cid || p.cid === cid).length;
+  return `<button class="pend-banner" id="pendBtn" ${n ? "" : "hidden"}>⚠ ${n} foto${n > 1 ? "s" : ""} não reconhecida${n > 1 ? "s" : ""} · toque para resolver</button>`;
+}
+
+/* ---------- pendentes: fotos que o site não reconheceu ---------- */
+function pendingScreen(){
+  const cid = S.selectedCompetitorId;
+  const list = S.pending.filter(p => !cid || p.cid === cid).sort((a, b) => a.at - b.at);
+  if (!list.length) { close(); refreshResearch(); return; }
+  modal(`<h2>Fotos não reconhecidas (${list.length})</h2>
+    <p class="sub" style="margin-top:-8px">Toque em <b>Resolver</b> e escolha o item. Assim o site aprende e reconhece sozinho nas próximas vezes.</p>
+    <div class="list" style="margin-top:8px">${list.map(p => {
+      const c = S.competitors.find(x => x.id === p.cid);
+      return `<div class="card pend-row">
+        <button class="thumb" data-res="${p.id}"><img data-pimg="${p.id}" alt=""></button>
+        <div style="flex:1;min-width:0"><b>${p.price ? brl(p.price) : "sem preço"}</b>
+          <div class="sub" style="font-size:13px">${esc(c ? c.name : "")} · ${p.retry ? "📴 aguardando internet" : p.shelf ? "foto de prateleira não lida" : p.motivo === "preço" ? "não li o preço" : "item não reconhecido"}</div></div>
+        <button class="btn btn-orange" data-res="${p.id}" style="padding:10px 12px">Resolver</button>
+        <button class="icon-btn" style="color:var(--red)" data-dis="${p.id}" aria-label="Descartar">${IC.del}</button>
+      </div>`; }).join("")}</div>
+    <div class="foot"><button class="btn btn-ghost" data-x>Fechar</button></div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = () => { close(); refreshResearch(); };
+    m.querySelectorAll("img[data-pimg]").forEach(async img => {
+      try { const b = await PhotoDB.get("pend_" + img.dataset.pimg); if (b) img.src = URL.createObjectURL(b); } catch(e) {}
+    });
+    m.onclick = e => {
+      const r = e.target.closest("[data-res]"), d = e.target.closest("[data-dis]");
+      if (r) resolvePending(+r.dataset.res);
+      if (d) { dropPending(+d.dataset.dis); pendingScreen(); refreshResearch(); }
+    };
+  });
+}
+function dropPending(id){ S.pending = S.pending.filter(p => p.id !== id); PhotoDB.del("pend_" + id); save(); }
+async function resolvePending(id){
+  const p = S.pending.find(x => x.id === id); if (!p) return;
+  const comp = S.competitors.find(c => c.id === p.cid);
+  if (!comp) { dropPending(id); return pendingScreen(); }
+  let blob = null; try { blob = await PhotoDB.get("pend_" + id); } catch(e) {}
+  if (blob && p.shelf && aiAvailable()) {   // foto de prateleira: tenta ler de novo
+    dropPending(id); close(); quickAdd([blob], p.cid, "shelf"); refreshResearch();
+    return toast("🗂 Lendo a foto de prateleira de novo…");
+  }
+  if (!blob) { toast("A foto desta pendência ficou em outro aparelho"); blob = new Blob([""], { type: "image/png" }); }
+  let loaded; try { loaded = await fileToImage(blob); } catch(e) { loaded = { img: new Image(), url: "" }; }
+  const ctx = { cid: p.cid, comp, file: blob, loaded, fixedProduct: null, chosen: null, text: p.text, ean: p.ean, price: p.price,
+    darkUnread: p.darkUnread, ranked: [], pendingId: id };
+  identify(ctx);
+  if (!ctx.chosen && p.guess) ctx.chosen = S.products.find(x => x.id === p.guess) || null;
+  confirmScreen(ctx, p.motivo === "preço" ? "Não consegui ler o preço. Digite o valor e salve." : "Escolha o item desta etiqueta. Depois ele reconhece sozinho.");
+}
+/* depois de um vínculo novo, tenta resolver sozinho as outras pendências do mesmo concorrente */
+async function autoResolvePending(cid){
+  for (const p of S.pending.filter(x => x.cid === cid && x.price)) {
+    const ctx = { cid, text: p.text, ean: p.ean, ranked: [] };
+    if (!identify(ctx)) continue;
+    let blob = null; try { blob = await PhotoDB.get("pend_" + p.id); } catch(e) {}
+    if (!blob) continue;
+    const loaded = await fileToImage(blob);
+    Object.assign(ctx, { comp: S.competitors.find(c => c.id === cid), loaded, file: blob });
+    await commit(ctx, ctx.chosen, p.price, p.darkUnread);
+    dropPending(p.id); URL.revokeObjectURL(loaded.url);
+    toast(`✓ Pendência resolvida sozinha: ${ctx.chosen.name}`);
+  }
+  refreshResearch();
+}
+
+/* recorta a região da etiqueta em volta do código de barras (foto de longe) */
+function cropAround(img, bc){
+  const b = bc.box, sx = img.naturalWidth / bc.w, sy = img.naturalHeight / bc.h;
+  const w = b.width * sx, x0 = b.x * sx, y0 = b.y * sy, x1 = x0 + w, y1 = (b.y + b.height) * sy;
+  if (w > img.naturalWidth * 0.3) return null;   // a foto já é de perto
+  const L = Math.max(0, x0 - 0.8 * w), T = Math.max(0, y0 - 1.8 * w);
+  const R = Math.min(img.naturalWidth, x1 + 1.8 * w), B = Math.min(img.naturalHeight, y1 + 0.3 * w);
+  const c = document.createElement("canvas"); c.width = R - L; c.height = B - T;
+  c.getContext("2d").drawImage(img, L, T, R - L, B - T, 0, 0, R - L, B - T);
+  const i2 = new Image(); i2.src = c.toDataURL("image/png");
+  return new Promise(r => { i2.onload = () => r(i2); i2.onerror = () => r(null); });
+}
+
+/* Lê a etiqueta: código de barras (se tiver) + duas leituras de texto. Devolve texto, menor preço e código */
+let ocrUses = 0;
+/* o leitor do celular lê uma foto por vez (duas fotos ao mesmo tempo atrapalham a leitura) */
+let ocrChain = Promise.resolve();
+function analyzeTag(file, img, onStatus){
+  const run = () => analyzeTagLocal(file, img, onStatus);
+  const r = ocrChain.then(run, run);
+  ocrChain = r.catch(() => {});
+  return r;
+}
+async function analyzeTagLocal(file, img, onStatus){
+  const bc = await readBarcode(file);
+  onStatus("prep");
+  if (ocrUses >= 20 && ocrWorkerP) {   // reinicia o leitor de tempos em tempos (libera memória do celular)
+    const old = ocrWorkerP; ocrWorkerP = null; ocrUses = 0;
+    old.then(w => w.terminate()).catch(() => {});
+  }
+  ocrUses++;
+  const worker = await getOCR();
+  const src = (bc && await cropAround(img, bc)) || img;
+  onStatus(1);
+  await worker.setParameters({ tessedit_pageseg_mode: "11" });
+  const A = (await worker.recognize(imageToCanvas(src, 1000, true, true))).data;
+  let B = null; const inv = darkInverted(src);
+  if (inv) {   // 2ª leitura: área escura invertida (pega preço branco em fundo preto)
+    onStatus(2);
+    await worker.setParameters({ tessedit_pageseg_mode: "6" });
+    B = (await worker.recognize(inv)).data;
+  }
+  const text = (A.text || "") + "\n" + (B ? B.text || "" : "");
+  const va = findPrices(A.words, A.text, A.lines).vals, vb = B ? findPrices(B.words, B.text, B.lines).vals : [];
+  const price = lowestPrice([va, vb]);
+  // área escura sem preço lido = pode haver um preço menor que o leitor não pegou
+  const darkUnread = !!inv && !vb.some(v => price && v <= price);
+  return { text, price, darkUnread, ean: (bc && bc.code) || eanFromText(text) };
+}
+
+/* ---------- ajuda do Claude: SÓ quando o leitor do celular (grátis) fica em dúvida ---------- */
+let aiCap = null, aiImages = false, aiMaxImgs = 1, aiOffUntil = 0, aiBlocked = false, aiWarned = 0;
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("sample").then(async s => {
+    aiCap = s || null;
+    if (aiCap) { try { const l = await aiCap.limits(); aiImages = !!(l && l.images);
+      aiMaxImgs = Math.max(1, Math.min(10, (l && l.images && l.images.maxCount) || 1)); } catch(e) { aiImages = false; } }
+    refreshIA();
+  }).catch(() => { aiCap = null; refreshIA(); });
+}
+const AI_LIMIT_KEY = "dscanner-ia-limite";
+const aiUseKey = () => "dscanner-ia-uso:" + dayKey(Date.now());
+const aiUsed = () => parseInt(lsGet(aiUseKey()) || "0", 10) || 0;
+const aiLimit = () => { const n = parseInt(lsGet(AI_LIMIT_KEY) || "60", 10); return Number.isFinite(n) && n >= 0 ? n : 60; };
+const aiReady = () => !!(aiCap && aiImages && !aiBlocked);
+function aiAvailable(){
+  return aiReady() && Date.now() > aiOffUntil && aiUsed() < aiLimit() && navigator.onLine !== false;
+}
+function aiWarnOnce(msg){ if (Date.now() - aiWarned > 60000) { aiWarned = Date.now(); toast(msg); } }
+/* preço mudou muito em relação ao último deste concorrente? então marca "conferir" */
+function bigChange(cid, prod, price){
+  const last = lastPrice(cid, prod);
+  return !!(last && price && (price / last > 1.4 || price / last < 0.6));
+}
+function productByEan(ean){
+  if (!ean) return null;
+  const al = [...S.aliases].reverse().find(a => a.ean === ean);
+  return (al && S.products.find(p => p.id === al.productId)) || S.products.find(p => p.barCode === ean) || null;
+}
+/* manda a foto (reduzida) ao Claude, com a lista de itens; devolve as etiquetas lidas */
+/* regras de preço iguais para todas as leituras do Claude */
+const AI_RULES = `- "nome": o texto do produto escrito na etiqueta
+- "ean": os 13 (ou 8) dígitos do código de barras impressos na etiqueta, só números; null se não der para ler
+- "preco": o MENOR preço por unidade da etiqueta (entre "atacado"/"a partir de", "varejo" e "por" da oferta, pegue o menor), número com ponto decimal
+- "item": o id do item da MINHA LISTA abaixo que é o mesmo produto (mesma marca, tipo e tamanho); null se não tiver na lista
+- "confianca": "alta", "media" ou "baixa" para o "item"
+NÃO use como preço: TRIB/impostos, média por litro ou por kg, preço da caixa ou fardo ("CXA C/ 12", "FDO C/ 20"), "nesta emb. 1 L", nem o preço "DE" riscado.
+Use o que está escrito na ETIQUETA, mesmo que o produto em cima seja outro. Não invente: o que não der para ler, deixe de fora.`;
+const aiList = () => "MINHA LISTA (id|nome|código):\n" + S.products.map(p => p.id + "|" + p.name + "|" + (p.barCode || "")).join("\n");
+/* uma chamada ao Claude = 1 no contador do dia */
+async function aiJson(prompt, blobs){
+  if (!aiAvailable()) return null;
+  lsSet(aiUseKey(), String(aiUsed() + 1)); refreshIA();
+  try { return await aiCap.json(prompt, { images: blobs, modelTier: "quick" }); }
+  catch(e) {
+    const code = e && e.code;
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed", "images_unavailable"].includes(code)) {
+      aiBlocked = true; aiWarnOnce("Ajuda do Claude não liberada: seguindo só com o leitor do celular.");
+    } else if (code === "rate_limited") {
+      aiOffUntil = Date.now() + 20 * 60000; aiWarnOnce("Limite de uso do Claude atingido: seguindo só com o leitor do celular por enquanto.");
+    } else if (code === "session_expired") {
+      aiOffUntil = Date.now() + 10 * 60000; aiWarnOnce("Entre de novo no Claude para usar a ajuda na leitura.");
+    }
+    refreshIA();
+    return null;
+  }
+}
+function mapTag(t){
+  const ean = /^\d{8}$|^\d{13}$/.test(String(t && t.ean || "")) ? String(t.ean) : null;
+  const byEan = productByEan(ean);
+  const byId = isId(t && t.item) ? S.products.find(p => p.id === +t.item) || null : null;
+  const conf = String(t && t.confianca || "").toLowerCase();
+  const p = byEan || byId;
+  return { name: cleanText(t && t.nome, 120), ean, price: money(t && t.preco), p,
+    sure: !!(byEan || (byId && conf === "alta")), via: byEan ? "pelo código de barras" : "pela leitura do Claude" };
+}
+const tagsOf = out => Array.isArray(out) ? out : (out && Array.isArray(out.etiquetas) ? out.etiquetas : []);
+/* foto de perto: manda a foto (reduzida) ao Claude, com a lista de itens */
+async function aiRead(img){
+  const blob = await canvasToBlob(imageToCanvas(img, 1280, false), 0.78);
+  const prompt =
+`Você lê etiquetas de preço de supermercado do Brasil. A foto mostra uma ou mais etiquetas de prateleira.
+Para CADA etiqueta que dê para ler com segurança, informe:
+${AI_RULES}
+Responda só com JSON: {"etiquetas":[{"nome":"...","ean":"...","preco":0.0,"item":0,"confianca":"alta"}]}
+
+${aiList()}`;
+  const out = await aiJson(prompt, [blob]);
+  if (!out) return null;
+  return tagsOf(out).slice(0, 20).map(mapTag).filter(t => t.price || t.p);
+}
+
+/* ---------- FOTO DE PRATELEIRA: 1) acha as etiquetas  2) recorta da foto original  3) lê os recortes ---------- */
+async function aiLocate(img){
+  const blob = await canvasToBlob(imageToCanvas(img, 1600, false), 0.8);
+  const prompt =
+`Foto de uma prateleira de supermercado. Encontre TODAS as etiquetas de preço da foto (etiquetas presas na prateleira e placas de oferta).
+Para cada etiqueta, dê a caixa que a contém INTEIRA (nome do produto, preços e código de barras), em frações da largura e da altura da foto, de 0 a 1:
+x0,y0 = canto de cima à esquerda; x1,y1 = canto de baixo à direita. No máximo 30 etiquetas. Não inclua embalagens de produto, só etiquetas de preço.
+Responda só com JSON: {"caixas":[{"x0":0.10,"y0":0.52,"x1":0.31,"y1":0.60}]}`;
+  const out = await aiJson(prompt, [blob]);
+  if (!out) return null;
+  const list = Array.isArray(out) ? out : (out && Array.isArray(out.caixas) ? out.caixas : []);
+  return list.map(b => ({ x0: +b.x0, y0: +b.y0, x1: +b.x1, y1: +b.y1 }))
+    .filter(b => [b.x0, b.y0, b.x1, b.y1].every(v => Number.isFinite(v) && v >= -0.05 && v <= 1.05) && b.x1 > b.x0 && b.y1 > b.y0)
+    .slice(0, 30);
+}
+/* recorta a etiqueta da foto ORIGINAL (tamanho cheio), com folga, e aumenta se for pequena */
+function cropBox(img, b){
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const w = (b.x1 - b.x0) * W, h = (b.y1 - b.y0) * H;
+  const x0 = Math.max(0, b.x0 * W - 0.15 * w), y0 = Math.max(0, b.y0 * H - 0.35 * h);
+  const x1 = Math.min(W, b.x1 * W + 0.15 * w), y1 = Math.min(H, b.y1 * H + 0.35 * h);
+  const cw = x1 - x0, ch = y1 - y0; if (cw < 12 || ch < 12) return null;
+  const s = Math.min(3, Math.max(1, 900 / cw), 1600 / Math.max(cw, ch));
+  const c = document.createElement("canvas"); c.width = Math.round(cw * s); c.height = Math.round(ch * s);
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  g.drawImage(img, x0, y0, cw, ch, 0, 0, c.width, c.height);
+  return c;
+}
+async function processShelf(it){
+  const comp = S.competitors.find(c => c.id === it.cid); if (!comp) return;
+  let loaded; try { loaded = await fileToImage(it.file); } catch(e) { toast("Não consegui abrir uma foto"); return; }
+  const whole = { cid: it.cid, comp, file: it.file, loaded, chosen: null, text: "", ean: null, price: null, ranked: [], shelf: true };
+  const toPending = async msg => { await addPending(whole, false, navigator.onLine === false); Q.pend++; toast(msg); finishQuick(loaded); };
+  if (!aiAvailable()) return toPending(navigator.onLine === false
+    ? "📴 Sem internet: a foto de prateleira ficou guardada e será lida quando a internet voltar."
+    : "⚠ Foto de prateleira precisa da ajuda do Claude (indisponível agora). Foi para Pendentes.");
+  const boxes = await aiLocate(loaded.img);
+  if (!boxes) return toPending("⚠ Não consegui ler a foto de prateleira agora. Foi para Pendentes.");
+  if (!boxes.length) return toPending("⚠ Não achei etiquetas nesta foto de prateleira. Foi para Pendentes.");
+  const crops = boxes.map(b => cropBox(loaded.img, b)).filter(Boolean);
+  const blobs = (await Promise.all(crops.map(c => canvasToBlob(c, 0.85)))).filter(Boolean);
+  const results = []; let stopped = false;
+  for (let i = 0; i < blobs.length; i += aiMaxImgs) {
+    const part = blobs.slice(i, i + aiMaxImgs);
+    const prompt =
+`Você lê etiquetas de preço de supermercado do Brasil. Foram enviadas ${part.length} imagem(ns), na ordem: imagem 1, imagem 2, etc.
+Cada imagem é o recorte de UMA etiqueta de prateleira. Pode aparecer um pedaço de outra etiqueta na borda: leia só a etiqueta principal, a do centro.
+Para cada imagem que dê para ler com segurança, informe "imagem" (o número da imagem) e:
+${AI_RULES}
+Responda só com JSON: {"etiquetas":[{"imagem":1,"nome":"...","ean":"...","preco":0.0,"item":0,"confianca":"alta"}]}
+
+${aiList()}`;
+    const out = await aiJson(prompt, part);
+    if (!out) { stopped = true; break; }
+    for (const t of tagsOf(out)) { const k = parseInt(t && t.imagem, 10); if (k >= 1 && k <= part.length) results.push({ idx: i + k - 1, t: mapTag(t) }); }
+  }
+  const seen = new Set(); let ok = 0, pend = 0, chk = 0;
+  for (const r of results) {
+    const t = r.t; if (!(t.price || t.p)) continue;
+    const key = t.p ? "p" + t.p.id : t.ean ? "e" + t.ean : null;
+    if (key && seen.has(key)) continue; if (key) seen.add(key);
+    let cimg; try { cimg = await fileToImage(blobs[r.idx]); } catch(e) { continue; }
+    const c = { cid: it.cid, comp, file: blobs[r.idx], loaded: cimg, text: t.name, ean: t.ean, price: t.price, chosen: t.p, ranked: [], darkUnread: false };
+    if (t.sure && t.p && t.price) {
+      const flag = bigChange(it.cid, t.p, t.price);
+      await commit(c, t.p, t.price, flag); ok++; if (flag) chk++;
+    } else { await addPending(c, !!(t.p && !t.price), false); pend++; }
+    URL.revokeObjectURL(cimg.url);
+  }
+  if (stopped) { await addPending(whole, false, false); pend++; }
+  Q.ok += ok; Q.pend += pend; Q.check += chk;
+  toast(`🗂 Prateleira: ${ok} preço${ok === 1 ? "" : "s"} salvo${ok === 1 ? "" : "s"}${chk ? ` (${chk} p/ conferir)` : ""}${pend ? ` · ${pend} para Pendentes` : ""}`);
+  finishQuick(loaded);
+}
+function refreshIA(){
+  const sb = document.getElementById("shelfBtn"); if (sb) sb.hidden = !aiReady();
+  const el = document.getElementById("iaLine"); if (!el) return;
+  if (!aiReady()) { el.hidden = true; return; }
+  el.hidden = false;
+  const off = Date.now() < aiOffUntil;
+  el.innerHTML = `🤖 Ajuda do Claude hoje: <b>${aiUsed()} de ${aiLimit()}</b>${off ? " · pausada (limite da conta)" : aiUsed() >= aiLimit() ? " · limite do dia atingido" : ""} · <u>alterar</u>`;
+}
+function aiLimitDialog(){
+  modal(`<h2>Ajuda do Claude</h2>
+    <p class="sub" style="margin-top:-6px">O leitor do celular (grátis) sempre tenta primeiro. O Claude só é chamado quando ele fica em dúvida. Cada chamada conta no uso da conta do Claude de quem está usando o app.</p>
+    <p class="sub">Hoje neste aparelho: <b>${aiUsed()}</b> leitura(s) pelo Claude.</p>
+    <form data-f><div class="field" style="margin-top:14px"><label>Máximo de leituras pelo Claude por dia</label><input data-n inputmode="numeric" maxlength="4" value="${aiLimit()}"></div>
+    <p class="hint">Use 0 para desligar a ajuda do Claude.</p>
+    <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Salvar</button></div></form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const n = parseInt(m.querySelector("[data-n]").value.replace(/\D/g, ""), 10);
+      if (!Number.isFinite(n)) return toast("Digite um número");
+      lsSet(AI_LIMIT_KEY, String(Math.min(n, 9999))); close(); refreshIA(); toast("Limite salvo: " + n + " por dia");
+    };
+  });
+}
+
+/* Foto da etiqueta.
+   - Item reconhecido pelo vínculo + preço lido  => salva sozinho e mostra o resultado (com Corrigir).
+   - Senão => você confere/escolhe o item e salva (isso cria o vínculo para as próximas vezes). */
+async function photoDialog(file, fixedProduct, cidArg){
+  const cid = cidArg || S.selectedCompetitorId;
+  const comp = S.competitors.find(c => c.id === cid);
+  let loaded;
+  try { loaded = await fileToImage(file); } catch(e) { toast("Não consegui abrir a foto"); return; }
+  const ctx = { cid, comp, file, loaded, fixedProduct, chosen: fixedProduct || null, text: "", ean: null, price: null, ranked: [], cancelled: false };
+
+  modal(`<h2>${fixedProduct ? esc(fixedProduct.name) : "Foto da etiqueta"}</h2>
+    <p class="sub" style="margin:-8px 0 12px">Concorrente: <b style="color:var(--text)">${esc(comp.name)}</b></p>
+    <img class="big-photo" style="max-height:30vh" src="${loaded.url}" alt="Foto da etiqueta">
+    <div class="status" data-st><span class="spin"></span> Lendo etiqueta…</div>
+    <div class="foot sticky"><button class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-white" data-man>Digitar o preço</button></div>`,
+  m => {
+    const st = m.querySelector("[data-st]");
+    m.querySelector("[data-x]").onclick = () => { ctx.cancelled = true; URL.revokeObjectURL(loaded.url); close(); };
+    m.querySelector("[data-man]").onclick = () => { ctx.cancelled = true; confirmScreen(ctx, "Digite o preço."); };
+    ocrLogger = msg => {
+      if (ctx.cancelled) return;
+      if (msg.status === "recognizing text") st.innerHTML = `<span class="spin"></span> ${ctx.pass === 2 ? "Conferindo preço" : "Lendo etiqueta"}… ${Math.round(msg.progress * 100)}%`;
+      else if (/load|initializ/.test(msg.status)) st.innerHTML = `<span class="spin"></span> Preparando leitor (só demora na 1ª vez)…`;
+    };
+    (async () => {
+      try {
+        const r = await analyzeTag(file, loaded.img, s => { ctx.pass = s; });
+        if (ctx.cancelled) return;
+        Object.assign(ctx, r);
+      } catch(e) {
+        if (ctx.cancelled) return;
+        ctx.ocrFailed = true;
+      }
+      if (ctx.cancelled) return;
+      ocrLogger = null;
+      // 1º: leitor do celular (grátis)
+      const sure = fixedProduct ? false : identify(ctx);
+      if (!fixedProduct && sure && ctx.price && !ctx.darkUnread && !bigChange(cid, ctx.chosen, ctx.price)) { ctx.cancelled = true; return autoSave(ctx); }
+      // 2º: ficou em dúvida -> ajuda do Claude (se tiver)
+      let viaAI = false;
+      const needAI = fixedProduct ? (!ctx.price || ctx.darkUnread) : !(sure && ctx.price && !ctx.darkUnread);
+      if (needAI && aiAvailable()) {
+        st.className = "status"; st.innerHTML = `<span class="spin"></span> Conferindo com o Claude…`;
+        const tags = await aiRead(loaded.img);
+        if (ctx.cancelled) return;
+        if (tags && tags.length) {
+          if (fixedProduct) {
+            const t = tags.find(x => x.p === fixedProduct) || (tags.length === 1 ? tags[0] : null);
+            if (t && t.price) { ctx.price = t.price; ctx.darkUnread = false; if (t.ean) ctx.ean = t.ean; viaAI = true; }
+          } else {
+            const t = tags.find(x => x.sure && x.p && x.price) || tags.find(x => x.p) || tags[0];
+            if (t.p) ctx.chosen = t.p;
+            if (t.price) { ctx.price = t.price; ctx.darkUnread = false; }
+            if (t.ean) ctx.ean = t.ean;
+            if (t.p && !ctx.ranked.some(r => r.p === t.p)) ctx.ranked.unshift({ p: t.p, s: 1 });
+            viaAI = true;
+            if (t.sure && t.p && t.price && !bigChange(cid, t.p, t.price)) { ctx.cancelled = true; ctx.via = t.via; return autoSave(ctx); }
+          }
+        }
+      }
+      ctx.cancelled = true;   // daqui em diante a tela é trocada
+      const big = ctx.chosen && ctx.price && bigChange(cid, ctx.chosen, ctx.price);
+      const msg = ctx.ocrFailed && !viaAI ? (navigator.onLine === false ? "Sem internet para o leitor automático. Digite o preço." : "Leitor automático indisponível. Digite o preço.")
+        : !ctx.price ? "Não consegui ler o preço. Digite o valor."
+        : ctx.darkUnread ? `Li ${brl(ctx.price)}, mas pode ter um preço MENOR na parte escura da etiqueta. Confira.`
+        : big ? `${brl(ctx.price)} está bem diferente do último preço deste concorrente (${brl(lastPrice(cid, ctx.chosen))}). Confira.`
+        : viaAI ? "Lido com ajuda do Claude. Confira o item e o preço e salve."
+        : fixedProduct ? "Confira o preço e salve. A etiqueta fica vinculada a este item."
+        : ctx.chosen ? "Confira o item e o preço. Ao salvar, a etiqueta fica vinculada."
+        : "Primeira vez desta etiqueta: escolha o seu item. Depois ele reconhece sozinho.";
+      confirmScreen(ctx, msg);
+    })();
+  });
+}
+
+/* guarda preço + foto + vínculo; devolve uma função para desfazer */
+async function commit(ctx, prod, price, check){
+  const { cid } = ctx;
+  const prevPrice = priceFor(cid, prod); const prevCopy = prevPrice ? { ...prevPrice } : null;
+  const prevLinks = S.links.slice(), prevAliases = S.aliases.slice();
+  const k = photoKey(cid, prod.id);
+  let prevBlob = null; const prevStamp = S.photos[k];
+  try {
+    if (prevStamp) prevBlob = await PhotoDB.get(k);
+    if (prevStamp && !prevBlob && CLOUD) prevBlob = await Cloud.getPhoto(k);
+  } catch(e) {}
+  setPrice(cid, prod, price, check);
+  if ((ctx.text || "").trim()) rememberLink(cid, ctx.text, prod.id);
+  if (ctx.ean && prod.barCode !== ctx.ean) rememberAlias(cid, "", prod.id, ctx.ean);
+  save();   // grava o preço na hora
+  try {     // guarda a foto nova no lugar da antiga
+    const blob = await canvasToBlob(imageToCanvas(ctx.loaded.img, 1280, false), 0.72);
+    await PhotoDB.put(k, blob); S.photos[k] = Date.now();
+    uploadPhoto(k, blob);
+  } catch(e) { toast("Preço salvo, mas a foto não pôde ser guardada"); }
+  save();
+  return async () => {   // desfazer
+    if (prevCopy) Object.assign(priceFor(cid, prod) || {}, prevCopy);
+    else S.prices = S.prices.filter(p => !(p.competitorId === cid && p.productId === prod.id));
+    S.links = prevLinks; S.aliases = prevAliases;
+    if (prevBlob) { await PhotoDB.put(k, prevBlob); S.photos[k] = prevStamp; uploadPhoto(k, prevBlob); } else removePhoto(cid, prod.id);
+    save();
+  };
+}
+
+/* reconheceu sozinho: salva e mostra o resultado */
+async function autoSave(ctx){
+  const prod = ctx.chosen, price = ctx.price;
+  const undo = await commit(ctx, prod, price);
+  render();
+  modal(`<div class="done">✓ Salvo</div>
+    <p class="pname" style="text-align:center;margin:6px 0 2px">${esc(prod.name)}</p>
+    <div class="big-price">${brl(price)}</div>
+    <p class="sub" style="text-align:center;margin:0 0 10px">${esc(ctx.comp.name)} · reconhecido ${esc(ctx.via || "pelo vínculo")}</p>
+    <img class="big-photo" style="max-height:26vh" src="${ctx.loaded.url}" alt="">
+    <div class="foot sticky">
+      <button class="btn btn-ghost" data-x>Fechar</button>
+      <button class="btn btn-white" data-fix>${IC.edit} Corrigir</button>
+      <button class="btn btn-orange" data-next>${IC.camera} Próxima foto</button>
+    </div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = () => { URL.revokeObjectURL(ctx.loaded.url); close(); };
+    m.querySelector("[data-next]").onclick = () => { URL.revokeObjectURL(ctx.loaded.url); close(); openCamera(null, ctx.cid); };
+    m.querySelector("[data-fix]").onclick = async () => { await undo(); render(); confirmScreen(ctx, "Corrija o item ou o preço e salve."); };
+  });
+}
+
+/* tela para conferir/escolher item e preço */
+function confirmScreen(ctx, message){
+  const { cid, comp, loaded, fixedProduct } = ctx;
+  modal(`<h2>${fixedProduct ? esc(fixedProduct.name) : "Foto da etiqueta"}</h2>
+    <p class="sub" style="margin:-8px 0 12px">Concorrente: <b style="color:var(--text)">${esc(comp.name)}</b></p>
+    <img class="big-photo" style="max-height:24vh" src="${loaded.url}" alt="Foto da etiqueta">
+    <div class="status ${ctx.price && !ctx.darkUnread ? "ok" : "warn"}">${esc(message)}</div>
+    <div class="field" style="margin-top:14px"><label>Preço (o menor da etiqueta)</label><input inputmode="numeric" autocomplete="off" data-p></div>
+    ${fixedProduct ? "" : `
+      <div class="field" style="margin-top:6px"><label>Meu item</label><input type="search" data-q placeholder="Buscar o item"></div>
+      <div class="choices" data-c></div>`}
+    <div class="foot sticky">
+      <button class="btn btn-ghost" data-x>${ctx.pendingId ? "Voltar" : "Cancelar"}</button>
+      ${fixedProduct || ctx.pendingId ? "" : `<button class="btn btn-white" data-next>${IC.camera} Salvar + próx.</button>`}
+      <button class="btn btn-orange" data-ok>Salvar</button>
+    </div>`,
+  m => {
+    const pIn = m.querySelector("[data-p]");
+    const pi = bindPriceInput(pIn, Math.round((ctx.price || 0) * 100), () => doSave(false));
+    const q = m.querySelector("[data-q]"), box = m.querySelector("[data-c]");
+    const draw = () => {
+      if (!box) return;
+      const nq = norm(q.value.trim());
+      let list = nq ? [...S.products].sort(byName).filter(p => norm(p.name).includes(nq) || p.barCode.includes(nq))
+                    : ctx.ranked.slice(0, 4).map(r => r.p);
+      if (ctx.chosen && !list.includes(ctx.chosen)) list = [ctx.chosen, ...list];
+      list = list.slice(0, nq ? 8 : 4);
+      box.innerHTML = list.length ? list.map(p => {
+        const pr = priceFor(cid, p);
+        return `<button class="choice ${ctx.chosen === p ? "on" : ""}" data-id="${p.id}"><span>${esc(p.name)}</span>${pr && pr.price > 0 ? `<small>atual ${brl(pr.price)}</small>` : ""}</button>`;
+      }).join("") : `<p class="hint">Busque o seu item acima e toque nele.</p>`;
+    };
+    if (box) {
+      box.onclick = e => { const b = e.target.closest("[data-id]"); if (!b) return; ctx.chosen = S.products.find(p => p.id === +b.dataset.id); draw(); };
+      q.oninput = draw; draw();
+    }
+    const doSave = async (next) => {
+      if (!ctx.chosen) { toast("Escolha o seu item"); q && q.focus(); return; }
+      const price = pi.value();
+      if (!(price > 0)) { toast("Informe o preço"); pIn.focus(); return; }
+      const mine = layer.firstChild;
+      if (next) { camTarget = null; camCid = cid; cam.value = ""; cam.click(); }   // abre a câmera já, no toque
+      await commit(ctx, ctx.chosen, price, false);
+      URL.revokeObjectURL(loaded.url);
+      if (ctx.pendingId) dropPending(ctx.pendingId);
+      if (layer.firstChild === mine) close();
+      render(); toast(`${ctx.chosen.name}: ${brl(price)}`);
+      if (S.pending.some(p => p.cid === cid)) {
+        await autoResolvePending(cid);
+        if (ctx.pendingId && S.pending.some(p => p.cid === cid)) pendingScreen();
+      }
+    };
+    m.querySelector("[data-x]").onclick = () => { URL.revokeObjectURL(loaded.url); close(); if (ctx.pendingId) pendingScreen(); };
+    m.querySelector("[data-ok]").onclick = () => doSave(false);
+    const nx = m.querySelector("[data-next]"); if (nx) nx.onclick = () => doSave(true);
+  });
+}
+
+function newCompetitorDialog(){
+  modal(`<h2>Novo concorrente</h2>
+    <form data-f><div class="field"><label>Nome do concorrente</label><input data-n maxlength="80"></div>
+    <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Criar</button></div></form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = cleanText(m.querySelector("[data-n]").value, 80);
+      if (!name) return;
+      if (S.competitors.some(x => norm(x.name) === norm(name))) return toast("Esse concorrente já existe");
+      const c = { id: newId(), name }; S.competitors.push(c); S.selectedCompetitorId = c.id;
+      save(); close(); render(); toast(`Concorrente "${name}" criado e selecionado`);
+    };
+  });
+}
+
+/* editar nome/código ou excluir um item da minha lista */
+function editProductDialog(prod){
+  modal(`<h2>Editar item</h2>
+    <form data-f>
+      <div class="field"><label>Nome</label><input data-n maxlength="120" value="${esc(prod.name)}"></div>
+      <div class="field" style="margin-top:18px"><label>Código de barras (opcional)</label><input data-b inputmode="numeric" maxlength="14" value="${esc(prod.barCode || "")}"></div>
+      <div class="foot" style="justify-content:space-between">
+        <button type="button" class="btn btn-ghost" data-del style="color:var(--red)">${IC.del} Excluir</button>
+        <span style="display:flex;gap:8px"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Salvar</button></span>
+      </div>
+    </form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    const b = m.querySelector("[data-b]"); b.oninput = () => { b.value = b.value.replace(/\D/g, ""); };
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = cleanText(m.querySelector("[data-n]").value, 120).toUpperCase();
+      if (!name) return toast("O nome não pode ficar vazio");
+      if (S.products.some(p => p !== prod && norm(p.name) === norm(name))) return toast("Já existe um item com esse nome");
+      prod.name = name; prod.barCode = digits(b.value);
+      for (const x of S.prices) if (x.productId === prod.id) { x.name = name; x.barCode = prod.barCode; }
+      save(); close(); render(); toast("Item atualizado");
+    };
+    m.querySelector("[data-del]").onclick = () => {
+      const n = S.prices.filter(x => x.productId === prod.id && x.price > 0).length;
+      confirmBox("Excluir item", `Excluir "${prod.name}" da sua lista?${n ? ` Os preços dele em ${n} concorrente(s) também serão apagados.` : ""}`, "Excluir", () => {
+        S.products = S.products.filter(p => p.id !== prod.id);
+        for (const k of Object.keys(S.orders)) S.orders[k] = S.orders[k].filter(id => id !== prod.id);
+        S.prices = S.prices.filter(x => x.productId !== prod.id);
+        S.links = S.links.filter(l => l.pid !== prod.id);
+        S.aliases = S.aliases.filter(a => a.productId !== prod.id);
+        for (const c of S.competitors) removePhoto(c.id, prod.id);
+        for (const p of S.pending) if (p.guess === prod.id) p.guess = null;
+        save(); render(); toast("Item excluído");
+      });
+    };
+  });
+}
+
+/* sugere a posição do item novo: depois do último item parecido (mesmo tipo/categoria) */
+function suggestPosition(name){
+  const words = norm(name).split(/[^a-z0-9]+/).filter(w => w.length >= 2);
+  if (!words.length) return -1;
+  let bestScore = 0, bestIdx = -1;
+  S.products.forEach((p, i) => {
+    const pw = norm(p.name).split(/[^a-z0-9]+/);
+    let s = 0;
+    for (let k = 0; k < Math.min(words.length, pw.length); k++) { if (words[k] === pw[k]) s += 3 - Math.min(k, 2) * 0.5; else break; }   // começo igual pesa mais
+    for (const w of words) if (w.length >= 3 && pw.includes(w)) s += 0.5;
+    if (s >= bestScore && s > 0) { bestScore = s; bestIdx = i; }   // ">=": fica depois do ÚLTIMO parecido
+  });
+  return bestScore >= 3 ? bestIdx : -1;
+}
+function newProductDialog(){
+  modal(`<h2>Novo produto</h2>
+    <form data-f>
+      <div class="field"><label>Nome</label><input data-n maxlength="120" placeholder="Ex.: FEIJÃO PRETO KICALDO 1KG"></div>
+      <div class="field" style="margin-top:18px"><label>Código de barras (opcional)</label><input data-b inputmode="numeric" maxlength="14"></div>
+      <div class="field" style="margin-top:18px"><label>Colocar depois de</label>
+        <select data-pos><option value="-1">No fim da lista</option><option value="start">No começo da lista</option>
+          ${S.products.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join("")}</select><span class="chev">${IC.chev}</span></div>
+      <p class="hint" data-hint style="margin-top:-4px">Digite o nome: eu coloco perto dos parecidos.</p>
+      <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Salvar</button></div>
+    </form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    const b = m.querySelector("[data-b]"); b.oninput = () => { b.value = b.value.replace(/\D/g, ""); };
+    const n = m.querySelector("[data-n]"), pos = m.querySelector("[data-pos]"), hint = m.querySelector("[data-hint]");
+    let touched = false;
+    pos.onchange = () => { touched = true; hint.textContent = "Posição escolhida por você."; };
+    n.oninput = () => {
+      if (touched) return;
+      const i = suggestPosition(n.value);
+      pos.value = String(i);
+      hint.textContent = i >= 0 ? "Sugestão: junto dos parecidos. Pode trocar acima." : "Não achei parecidos: vai para o fim. Pode trocar acima.";
+    };
+    m.querySelector("[data-f]").onsubmit = e => {
+      e.preventDefault();
+      const name = cleanText(n.value, 120).toUpperCase();
+      if (!name) return;
+      if (S.products.some(p => norm(p.name) === norm(name))) { toast("Esse produto já está na lista"); return; }
+      const item = { id: newId(), name, barCode: digits(b.value) };
+      const v = pos.value;
+      const anchor = +v >= 0 ? S.products[+v] : null;   // item que fica antes do novo
+      if (v === "start") S.products.unshift(item);
+      else if (+v >= 0) S.products.splice(+v + 1, 0, item);
+      else S.products.push(item);
+      for (const k of Object.keys(S.orders)) {   // nos concorrentes com ordem própria: depois do mesmo vizinho
+        const o = S.orders[k], i = anchor ? o.indexOf(anchor.id) : -1;
+        if (v === "start") o.unshift(item.id); else if (i >= 0) o.splice(i + 1, 0, item.id); else o.push(item.id);
+      }
+      save(); close(); render(); toast("Produto adicionado");
+    };
+  });
+}
+
+function barcodeDialog(product){
+  const code = sanitizeEAN13(product.barCode);
+  modal(`<h2 style="font-size:16px">${esc(product.name)}</h2>
+    ${code ? `<div class="barcode-box">${ean13SVG(code)}</div>` : `<p class="sub">Este produto não tem um código EAN-13 válido (13 números).</p>`}
+    <div class="foot"><button class="btn btn-orange" data-x>Fechar</button></div>`,
+  m => { m.querySelector("[data-x]").onclick = close; });
+}
+
+function exportDialog(blobFn, filename){
+  const share = canShareFiles();
+  modal(`<h2>Exportar pesquisa de preços</h2>
+    <p class="sub">Vai para o Excel o último preço de cada item. Ficam vazios só os itens com <b>preço limpo</b> (não tinha na loja) ou que nunca foram encontrados.</p>
+    <div class="foot"><button class="btn btn-ghost" data-x>Cancelar</button>
+      ${share ? `<button class="btn btn-white" data-s>${IC.share} Compartilhar</button>` : ""}
+      <button class="btn btn-orange" data-d>${IC.dl} Salvar</button></div>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-d]").onclick = () => { close(); saveFile(blobFn(), filename); };
+    const s = m.querySelector("[data-s]"); if (s) s.onclick = () => { close(); shareFile(blobFn(), filename); };
+  });
+}
+
+/* ---------- telas ---------- */
+const app = document.getElementById("app");
+let query = "";
+let openCompetitorId = null;
+
+function render(){
+  if (organizing) return renderOrganize(organizing.cid);
+  const tab = (location.hash || "#pesquisa").slice(1);
+  document.querySelectorAll("nav.bottom a").forEach(a => a.classList.toggle("on", a.dataset.tab === tab || (tab === "" && a.dataset.tab === "pesquisa")));
+  if (tab === "concorrentes") openCompetitorId ? renderCompetitor() : renderCompetitors();
+  else renderResearch();
+}
+
+function renderResearch(){
+  const comps = [...S.competitors].sort(byName);
+  if (S.selectedCompetitorId && !S.competitors.some(c => c.id === S.selectedCompetitorId)) S.selectedCompetitorId = null;
+  app.innerHTML = `
+    <div class="head"><h1>PESQUISA DE PREÇO</h1><button class="user-chip" id="usr">👤 ${esc(String(USER).split("@")[0])}</button></div>
+    <div class="field" style="margin-top:12px"><label>Buscar produto</label><input id="q" type="search" placeholder="Nome ou código de barras" value="${esc(query)}"></div>
+    <div class="row">
+      <button class="btn btn-orange" id="addP">+ Produto</button>
+      <button class="btn btn-orange" id="addC">+ Concorrente</button>
+    </div>
+    <button class="btn btn-ghost" id="myItems" style="width:100%;margin-top:4px;color:var(--primary)">↕ Organizar, editar ou excluir meus itens</button>
+    <div class="row" style="margin-top:2px">
+      <button class="btn btn-white" id="impP" style="font-size:14px">📥 Importar produtos</button>
+      <button class="btn btn-white" id="expP" style="font-size:14px">📤 Baixar lista de produtos</button>
+    </div>
+    <div class="field" style="margin-top:18px">
+      <label>Concorrente</label>
+      <select id="sel">
+        <option value="">${comps.length ? "Selecione concorrente" : "Nenhum concorrente – crie um"}</option>
+        ${comps.map(c => `<option value="${c.id}" ${c.id === S.selectedCompetitorId ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select><span class="chev">${IC.chev}</span>
+    </div>
+    <button class="btn btn-orange btn-cam" id="camBtn">${IC.camera} Tirar fotos das etiquetas</button>
+    <button class="btn btn-white" id="galBtn" style="width:100%;margin-top:8px">🖼 Enviar várias fotos da galeria</button>
+    <button class="btn btn-white" id="shelfBtn" style="width:100%;margin-top:8px" hidden>🗂 Foto de prateleira (várias etiquetas)</button>
+    ${pendBanner()}
+    <p class="hint" style="text-align:center">Modo rápido: vá tirando as fotos. O que ele reconhecer, salva sozinho; o que não reconhecer vai para <b>Pendentes</b>.<br>Para ensinar um item novo, use o botão <b>Foto</b> do próprio item.</p>
+    <button class="btn btn-ghost" id="iaLine" style="width:100%;margin-top:4px;font-size:13px;color:var(--muted);font-weight:400" hidden></button>
+    <div class="list" id="list"></div>`;
+  app.querySelector("#iaLine").onclick = aiLimitDialog;
+  app.querySelector("#shelfBtn").onclick = openShelf;
+  refreshIA();
+  app.querySelector("#camBtn").onclick = () => openCamera(null);
+  app.querySelector("#galBtn").onclick = openGallery;
+  app.querySelector("#myItems").onclick = () => { organizing = { cid: null }; render(); window.scrollTo(0, 0); };
+  app.querySelector("#pendBtn").onclick = pendingScreen;
+  app.querySelector("#usr").onclick = switchUser;
+  const q = app.querySelector("#q");
+  q.oninput = () => { query = q.value; drawList(); };
+  app.querySelector("#addP").onclick = newProductDialog;
+  app.querySelector("#impP").onclick = openImport;
+  app.querySelector("#expP").onclick = downloadProductList;
+  app.querySelector("#addC").onclick = newCompetitorDialog;
+  app.querySelector("#sel").onchange = e => { S.selectedCompetitorId = e.target.value ? +e.target.value : null; save(); refreshResearch(); if (S.selectedCompetitorId) warmOCR(); };
+  drawList();
+}
+
+function drawList(){
+  const list = document.getElementById("list");
+  const nq = norm(query.trim());
+  const items = productsFor(S.selectedCompetitorId).filter(p => !nq || norm(p.name).includes(nq) || p.barCode.includes(nq));
+  const cid = S.selectedCompetitorId;
+  const rdSel = cid ? researchDay(cid) : null;
+  if (!items.length) { list.innerHTML = `<div class="empty-state">Nenhum produto encontrado.</div>`; return; }
+  list.innerHTML = items.map(p => {
+    const pr = cid ? priceFor(cid, p) : null;
+    const eff = cid ? effPrice(cid, p) : null, today = checkedOn(pr, rdSel), cleared = pr && pr.notFound;
+    const k = cid ? photoKey(cid, p.id) : null;
+    return `<div class="card">
+      <div class="ptop">
+        ${k && S.photos[k] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
+        <p class="pname">${esc(p.name)}</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-orange" data-bar="${p.id}" aria-label="Código de barras" ${sanitizeEAN13(p.barCode) ? "" : "disabled title='Sem código de barras'"}>${IC.barcode}</button>
+        <button class="btn btn-orange grow" data-cam="${p.id}">${IC.camera} Foto</button>
+        <button class="btn btn-white grow" data-edit="${p.id}">${IC.edit} Preço</button>
+      </div>
+      <div class="pline">
+        ${cid && eff ? `<button class="clear-btn" data-clr="${p.id}">✕ Limpar preço</button>`
+          : cid && cleared && pr.price > 0 ? `<button class="undo-btn" data-undo="${p.id}" style="margin:0">↺ Desfazer</button>` : "<span></span>"}
+        <div class="price ${eff ? "" : "empty"}">${
+          cleared ? `Preço limpo em ${dayLabel(pr.updatedAt)}${pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div>` : ""}`
+          : eff ? (eff.check ? `<span class="chk">⚠ conferir</span> ` : "") + "Preço: " + brl(eff.price) + (today ? "" : `<div class="stamp">mantido de ${dayLabel(eff.priceAt || eff.updatedAt)}</div>`)
+          : (cid ? "Sem preço neste concorrente" : "Selecione um concorrente")}</div>
+      </div>
+    </div>`;
+  }).join("");
+  fillThumbs(list);
+  list.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const prod = S.products.find(p => p.id === +(b.dataset.bar || b.dataset.edit || b.dataset.cam || b.dataset.view || b.dataset.clr || b.dataset.undo));
+    if (!prod) return;
+    if (b.dataset.clr) { clearPrice(cid, prod); save(); drawList(); return toast(`${prod.name}: preço limpo (não tinha na loja)`); }
+    if (b.dataset.undo) { undoClear(cid, prod); save(); drawList(); return toast(`${prod.name}: preço de volta`); }
+    if (b.dataset.bar) return barcodeDialog(prod);
+    if (b.dataset.view) return photoViewer(photoKey(cid, prod.id), prod.name);
+    if (b.dataset.cam) return openCamera(prod);
+    if (!S.selectedCompetitorId) { toast("Selecione ou crie um concorrente primeiro"); newCompetitorDialog(); return; }
+    const existing = priceFor(S.selectedCompetitorId, prod);
+    priceDialog(prod.name, existing, price => {
+      setPrice(S.selectedCompetitorId, prod, price);
+      save(); drawList(); toast("Preço salvo: " + brl(price));
+    });
+  };
+}
+
+function renderCompetitors(){
+  const comps = [...S.competitors].sort(byName);
+  app.innerHTML = `
+    <div class="head"><h1 style="font-size:26px">Concorrentes</h1>
+      <button class="btn btn-orange" id="exp" ${comps.length ? "" : "disabled"}>Exportar</button></div>
+    ${comps.length ? `<div class="list">${comps.map(c => `
+      <div class="card alt comp">
+        <button class="cname" data-open="${c.id}">${esc(c.name)}</button>
+        <span class="count">${(() => { const rd = researchDay(c.id); const h = S.products.filter(p => inHistory(c.id, p)).length;
+          const n = S.products.filter(p => effPrice(c.id, p)).length;
+          return h ? `${n} com preço · ${dayLabel(rd)}` : "sem pesquisa"; })()}</span>
+        <button class="icon-btn" style="color:var(--red)" data-del="${c.id}" aria-label="Excluir">${IC.del}</button>
+      </div>`).join("")}</div>`
+    : `<div class="empty-state">Nenhum concorrente cadastrado ainda.</div>`}
+    <div class="small-links">
+      <button id="sw">${CLOUD ? "Sair da conta" : "Trocar usuário"} (${esc(USER)})</button>
+      <button id="bk">Fazer backup dos dados</button>
+      <button id="rs">Restaurar backup</button>
+    </div>
+    <input type="file" id="file" accept=".json,application/json" hidden>`;
+  app.querySelector("#exp").onclick = () => exportDialog(xlsxAll, `Pesquisa_de_Precos_${safeName(USER)}.xlsx`);
+  app.querySelector("#sw").onclick = switchUser;
+  app.onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.open) { openCompetitorId = +b.dataset.open; render(); window.scrollTo(0,0); }
+    if (b.dataset.del) {
+      const c = S.competitors.find(x => x.id === +b.dataset.del);
+      confirmBox("Excluir concorrente", `Excluir "${c.name}" e todos os preços dele?`, "Excluir", () => {
+        S.competitors = S.competitors.filter(x => x.id !== c.id); delete S.orders[c.id];
+        S.prices = S.prices.filter(p => p.competitorId !== c.id);
+        removeCompetitorPhotos(c.id); S.links = S.links.filter(l => l.cid !== c.id);
+        S.pending.filter(p => p.cid === c.id).forEach(p => dropPending(p.id));
+        save(); render();
+      });
+    }
+  };
+  app.querySelector("#bk").onclick = () => {
+    const d = new Date().toISOString().slice(0,10);
+    saveFile(new Blob([JSON.stringify(S, null, 1)], {type:"application/json"}), `DScanner_backup_${d}.json`);
+  };
+  const file = app.querySelector("#file");
+  app.querySelector("#rs").onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    if (f.size > 20 * 1048576) return toast("Arquivo grande demais para ser um backup");
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data.products) || !Array.isArray(data.competitors) || !Array.isArray(data.prices)) throw 0;
+      confirmBox("Restaurar backup", `Isso substitui todos os dados do usuário ${USER} pelos do arquivo.`, "Restaurar", () => {
+        S = normalizeState(data); save(); render(); toast("Backup restaurado");
+      });
+    } catch(e) { toast("Arquivo de backup inválido"); }
+  };
+}
+
+let organizing = false;
+let selecting = null;   // Set com os itens marcados (modo "limpar vários")
+function renderCompetitor(){
+  const c = S.competitors.find(x => x.id === openCompetitorId);
+  if (!c) { openCompetitorId = null; organizing = false; selecting = null; return renderCompetitors(); }
+  const rd = researchDay(c.id);
+  const hist = productsFor(c.id).filter(p => inHistory(c.id, p));
+  const withPrice = hist.filter(p => effPrice(c.id, p));
+  const nToday = withPrice.filter(p => checkedOn(priceFor(c.id, p), rd)).length;
+  const nKept = withPrice.length - nToday;
+  const nClr = hist.filter(p => { const x = priceFor(c.id, p); return x && x.notFound; }).length;
+  if (selecting) return renderSelect(c, withPrice);
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" style="color:var(--primary)" id="back" aria-label="Voltar">${IC.back}</button>
+      <h1>${esc(c.name)}</h1>
+      <button class="btn btn-ghost" id="clr" style="color:var(--red);padding:8px 6px;font-size:14px" ${withPrice.length ? "" : "disabled"}>${IC.sweep} Limpar todos</button>
+    </div>
+    <div class="summary">
+      <div>${rd ? `Pesquisa de <b>${dayLabel(rd)}</b>: <b style="color:var(--ok)">${nToday}</b> atualizado${nToday === 1 ? "" : "s"}${nKept ? ` · <b>${nKept}</b> mantido${nKept === 1 ? "" : "s"}` : ""}${nClr ? ` · <b style="color:var(--red)">${nClr}</b> limpo${nClr === 1 ? "" : "s"}` : ""}` : "Nenhum preço pesquisado ainda."}</div>
+      <button class="btn btn-white" id="org" style="padding:9px 12px;white-space:nowrap">↕ Organizar${S.orders[c.id] ? "*" : ""}</button>
+    </div>
+    <p class="hint" style="margin:6px 2px 0">Sem mexer, o preço <b>continua o mesmo</b>. Use <b>Limpar preço</b> quando não tiver na loja.</p>
+    ${withPrice.length > 1 ? `<button class="btn btn-white" id="selBtn" style="width:100%;margin:8px 0 2px">☑ Limpar preço de vários</button>` : ""}
+    ${hist.length ? `<div class="list" id="clist">${hist.map(p => {
+      const pr = priceFor(c.id, p), eff = effPrice(c.id, p), today = checkedOn(pr, rd), k = photoKey(c.id, p.id);
+      return `<div class="card crow ${eff ? "" : "nf"}">
+        ${S.photos[k] ? `<button class="thumb" data-view="${p.id}" aria-label="Ver foto"><img data-photo="${k}" alt=""></button>` : ""}
+        <div style="flex:1;min-width:0">
+          <p class="pname" style="font-size:15px;margin:2px 0 4px">${esc(p.name)}</p>
+          ${eff ? `<div class="cprice">${eff.check ? `<span class="chk">⚠ conferir</span> ` : ""}${brl(eff.price)}</div>
+                   <div class="stamp">${today ? "atualizado nesta pesquisa" : `mantido de ${dayLabel(eff.priceAt || eff.updatedAt)}`}</div>`
+                : `<div class="cprice nf">preço limpo${pr && pr.notFound ? ` em ${dayLabel(pr.updatedAt)}` : ""}</div>
+                   ${pr && pr.price > 0 ? `<div class="stamp">último: ${brl(pr.price)}</div><button class="undo-btn" data-undo="${p.id}">↺ Desfazer</button>` : ""}`}
+          <button class="rm-btn" data-rm="${p.id}">🗑 Remover deste concorrente</button>
+        </div>
+        <button class="icon-btn" style="color:var(--primary)" data-cam="${p.id}" aria-label="Tirar foto">${IC.camera}</button>
+        <button class="icon-btn" style="color:var(--primary)" data-edit="${p.id}" aria-label="Editar preço">${IC.edit}</button>
+        ${eff ? `<button class="icon-btn" style="color:var(--red)" data-clr="${p.id}" aria-label="Limpar preço">${IC.sweep}</button>` : ""}
+      </div>`; }).join("")}</div>
+    <button class="btn btn-ghost" id="zero" style="width:100%;margin:14px 0 0;color:var(--red)">🗑 Começar do zero neste concorrente</button>`
+    : `<div class="empty-state">Nenhum item encontrado ainda no ${esc(c.name)}.<br>Vá em <b>Pesquisa</b>, selecione "${esc(c.name)}" e tire as fotos ou digite os preços.<br>Aqui fica o histórico do que você já encontrou nele.</div>`}
+    <button class="fab" id="exp" aria-label="Exportar Excel">${IC.dl}</button>`;
+  app.querySelector("#back").onclick = () => { openCompetitorId = null; selecting = null; render(); };
+  app.querySelector("#org").onclick = () => { organizing = { cid: c.id }; render(); window.scrollTo(0, 0); };
+  const sb = app.querySelector("#selBtn"); if (sb) sb.onclick = () => { selecting = new Set(); render(); window.scrollTo(0, 0); };
+  app.querySelector("#clr").onclick = () => confirmBox("Limpar todos os preços", `Limpar o preço de todos os itens do "${c.name}"? Eles ficam vazios no Excel até você lançar de novo. Os últimos preços ficam guardados (dá para desfazer item por item).`, "Limpar todos", () => {
+    for (const p of withPrice) clearPrice(c.id, p);
+    save(); render(); toast("Preços limpos");
+  });
+  const zb = app.querySelector("#zero");
+  if (zb) zb.onclick = () => confirmBox("Começar do zero", `Remover todos os ${hist.length} itens da lista do "${c.name}"? Os preços, o histórico e as fotos deste concorrente serão apagados, sem desfazer. Os itens continuam na sua lista geral e nos outros concorrentes.`, "Remover todos", () => {
+    for (const p of hist) removeFromCompetitor(c.id, p);
+    save(); render(); window.scrollTo(0, 0); toast(`${c.name}: lista zerada`);
+  });
+  fillThumbs(app);
+  app.querySelector("#exp").onclick = () => exportDialog(() => xlsxOne(c), `produtos_${safeName(c.name)}${rd ? "_" + dayKey(rd) : ""}.xlsx`);
+  app.onclick = e => {
+    const b = e.target.closest("button[data-edit],button[data-clr],button[data-view],button[data-cam],button[data-undo],button[data-rm]"); if (!b) return;
+    const prod = S.products.find(x => x.id === +(b.dataset.edit || b.dataset.clr || b.dataset.view || b.dataset.cam || b.dataset.undo || b.dataset.rm)); if (!prod) return;
+    if (b.dataset.rm) return confirmBox("Remover deste concorrente", `Remover "${prod.name}" da lista do "${c.name}"? O preço, o histórico e a foto dele neste concorrente serão apagados, sem desfazer. O item continua na sua lista geral.`, "Remover", () => {
+      removeFromCompetitor(c.id, prod); save(); render(); toast(`${prod.name}: removido do ${c.name}`);
+    });
+    if (b.dataset.view) return photoViewer(photoKey(c.id, prod.id), prod.name);
+    if (b.dataset.cam) return openCamera(prod, c.id);
+    if (b.dataset.edit) return priceDialog(prod.name, effPrice(c.id, prod), price => { setPrice(c.id, prod, price, false); save(); render(); });
+    if (b.dataset.clr) { clearPrice(c.id, prod); save(); render(); return toast(`${prod.name}: preço limpo`); }
+    if (b.dataset.undo) { undoClear(c.id, prod); save(); render(); return toast(`${prod.name}: preço de volta`); }
+  };
+}
+
+/* modo "limpar vários": marca os itens que não tinham na loja e limpa de uma vez */
+function renderSelect(c, withPrice){
+  if (!withPrice.length) { selecting = null; return render(); }
+  const n = () => selecting.size;
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" style="color:var(--primary)" id="cancelSel" aria-label="Voltar">${IC.back}</button>
+      <h1>Limpar preço · ${esc(c.name)}</h1>
+    </div>
+    <p class="hint" style="margin:0 0 8px">Marque os itens que <b>não tinham na loja</b> e toque em <b>Limpar</b>. Eles ficam vazios no Excel.</p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-white" id="all">Marcar todos (${withPrice.length})</button>
+      <button class="btn btn-white" id="none">Desmarcar</button>
+    </div>
+    <div class="list" id="slist" style="margin-top:0;padding-bottom:90px">${withPrice.map(p => {
+      const pr = effPrice(c.id, p);
+      return `<label class="card selrow"><input type="checkbox" data-chk="${p.id}" ${selecting.has(p.id) ? "checked" : ""}>
+        <span style="flex:1;min-width:0"><span class="pname" style="font-size:15px;display:block;margin:0 0 2px">${esc(p.name)}</span>
+        <span class="stamp">preço atual: <b style="color:var(--primary)">${brl(pr.price)}</b> de ${dayLabel(pr.priceAt || pr.updatedAt)}</span></span></label>`; }).join("")}</div>
+    <div class="selbar">
+      <button class="btn btn-ghost" id="cancelSel2">Cancelar</button>
+      <button class="btn btn-red" id="okSel" style="flex:2">✕ Limpar preço (<span id="cnt">${n()}</span>)</button>
+    </div>`;
+  const upd = () => { app.querySelector("#cnt").textContent = n(); app.querySelector("#okSel").disabled = !n(); };
+  const exit = () => { selecting = null; render(); window.scrollTo(0, 0); };
+  app.querySelector("#cancelSel").onclick = exit; app.querySelector("#cancelSel2").onclick = exit;
+  app.querySelector("#all").onclick = () => { withPrice.forEach(p => selecting.add(p.id)); app.querySelectorAll("[data-chk]").forEach(x => x.checked = true); upd(); };
+  app.querySelector("#none").onclick = () => { selecting.clear(); app.querySelectorAll("[data-chk]").forEach(x => x.checked = false); upd(); };
+  app.querySelector("#slist").onchange = e => { const x = e.target.closest("[data-chk]"); if (!x) return; x.checked ? selecting.add(+x.dataset.chk) : selecting.delete(+x.dataset.chk); upd(); };
+  app.querySelector("#okSel").onclick = () => {
+    let k = 0;
+    for (const id of selecting) { const p = S.products.find(x => x.id === id); if (p) { clearPrice(c.id, p); k++; } }
+    save(); selecting = null; render(); window.scrollTo(0, 0);
+    toast(`${k} preço${k === 1 ? "" : "s"} limpo${k === 1 ? "" : "s"}`);
+  };
+  upd();
+}
+
+/* ---------- organizar a ordem dos itens: geral (cid = null) ou de um concorrente ---------- */
+function renderOrganize(cid){
+  const comp = cid && S.competitors.find(c => c.id === cid);
+  if (cid && !comp) { organizing = false; return render(); }
+  const own = comp && !!S.orders[cid];
+  app.onclick = null;
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" style="color:var(--primary)" id="done1" aria-label="Voltar">${IC.back}</button>
+      <h1>${comp ? "Ordem: " + esc(comp.name) : "Meus itens"}</h1>
+      <button class="btn btn-orange" id="done2" style="padding:9px 16px">Pronto</button>
+    </div>
+    <div class="ordbox ${comp ? "ordc" : ""}">${comp
+      ? (own ? `Esta é a ordem <b>só do ${esc(comp.name)}</b>. Os outros concorrentes não mudam.`
+             : `Hoje o ${esc(comp.name)} usa a <b>ordem geral</b>. Ao mudar algo aqui, ele passa a ter <b>ordem própria</b>.`)
+      : `Esta é a <b>ordem geral</b>: vale para concorrentes sem ordem própria e para o Excel.`}</div>
+    <p class="hint" style="margin:0 0 8px">Arraste pelo <b>☰</b> ou use <b>▲ ▼</b> para mudar a ordem. <b>Toque no nome</b> para editar ou excluir o item.</p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-white" id="grp">🧺 Juntar parecidos</button>
+      <button class="btn btn-white" id="addP2">+ Produto</button>
+    </div>
+    ${own ? `<button class="btn btn-ghost" id="reset" style="width:100%;margin:-4px 0 8px;color:var(--red)">↺ Voltar para a ordem geral</button>` : ""}
+    <div id="olist">${productsFor(cid).map(p => `<div class="orow" data-id="${p.id}">
+      <span class="handle" aria-label="Arrastar">☰</span>
+      <span class="oname" role="button">${esc(p.name)}<small>${p.barCode ? esc(p.barCode) : "sem código"} · editar</small></span>
+      <button class="obtn" data-up aria-label="Subir">▲</button><button class="obtn" data-dn aria-label="Descer">▼</button>
+    </div>`).join("")}</div>`;
+  const olist = app.querySelector("#olist");
+  let firstChange = !own;
+  const apply = () => {
+    const ids = [...olist.children].map(r => +r.dataset.id);
+    if (comp) {
+      S.orders[cid] = ids; save();
+      if (firstChange) { firstChange = false; const box = app.querySelector(".ordbox"); if (box) box.innerHTML = `Esta é a ordem <b>só do ${esc(comp.name)}</b>. Os outros concorrentes não mudam.`; }
+      return;
+    }
+    const map = new Map(S.products.map(p => [p.id, p]));
+    S.products = ids.map(id => map.get(id)).filter(Boolean).concat(S.products.filter(p => !ids.includes(p.id)));
+    save();
+  };
+  const done = () => { organizing = false; render(); window.scrollTo(0, 0); toast("Ordem salva"); };
+  app.querySelector("#done1").onclick = done; app.querySelector("#done2").onclick = done;
+  app.querySelector("#addP2").onclick = newProductDialog;
+  app.querySelector("#grp").onclick = () => confirmBox("Juntar parecidos", "Colocar juntos os itens do mesmo tipo (arroz com arroz, feijão com feijão…)? A ordem dentro de cada tipo é mantida.", "Juntar", () => {
+    if (comp) S.orders[cid] = groupedProducts(productsFor(cid)).map(p => p.id);
+    else S.products = groupedProducts();
+    save(); render(); toast("Itens parecidos agrupados");
+  });
+  const rs = app.querySelector("#reset");
+  if (rs) rs.onclick = () => confirmBox("Ordem geral", `O ${comp.name} volta a usar a ordem geral? A ordem própria dele será apagada.`, "Voltar", () => {
+    delete S.orders[cid]; save(); render(); toast("Usando a ordem geral");
+  });
+  olist.onclick = e => {
+    const row = e.target.closest(".orow"); if (!row) return;
+    if (e.target.closest(".oname")) { const prod = S.products.find(p => p.id === +row.dataset.id); if (prod) editProductDialog(prod); return; }
+    if (e.target.closest("[data-up]") && row.previousElementSibling) olist.insertBefore(row, row.previousElementSibling);
+    else if (e.target.closest("[data-dn]") && row.nextElementSibling) olist.insertBefore(row.nextElementSibling, row);
+    else return;
+    row.classList.add("moved"); setTimeout(() => row.classList.remove("moved"), 400);
+    apply();
+  };
+  olist.addEventListener("pointerdown", e => {
+    const h = e.target.closest(".handle"); if (!h) return;
+    e.preventDefault();
+    const row = h.closest(".orow"); row.classList.add("drag");
+    const startY = e.clientY, startScroll = window.scrollY;
+    let lastY = e.clientY, before = undefined, scrollT = null;
+    const mark = () => {
+      row.style.transform = `translateY(${lastY - startY + window.scrollY - startScroll}px)`;
+      const rows = [...olist.children].filter(r => r !== row);
+      before = null;
+      for (const r of rows) { const bx = r.getBoundingClientRect(); if (lastY < bx.top + bx.height / 2) { before = r; break; } }
+      rows.forEach(r => r.classList.remove("drop-before", "drop-after"));
+      if (before) before.classList.add("drop-before"); else if (rows.length) rows[rows.length - 1].classList.add("drop-after");
+    };
+    const move = ev => {
+      lastY = ev.clientY; mark();
+      clearInterval(scrollT);
+      if (lastY < 90 || lastY > innerHeight - 110) scrollT = setInterval(() => { window.scrollBy(0, lastY < 90 ? -14 : 14); mark(); }, 30);
+    };
+    const up = ev => {
+      clearInterval(scrollT);
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+      row.classList.remove("drag"); row.style.transform = "";
+      olist.querySelectorAll(".drop-before,.drop-after").forEach(r => r.classList.remove("drop-before", "drop-after"));
+      if (ev.type === "pointerup" && before !== undefined && before !== row.nextElementSibling) {
+        olist.insertBefore(row, before);
+        row.classList.add("moved"); setTimeout(() => row.classList.remove("moved"), 500);
+        apply();
+      }
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  });
+}
+
+/* ---------- usuários ---------- */
+const nav = document.getElementById("nav");
+function knownUsers(){ try { return JSON.parse(lsGet(USERS_KEY) || "[]"); } catch(e) { return []; } }
+function rememberUser(n){ const l = knownUsers().filter(x => x.toLowerCase() !== n.toLowerCase()); l.push(n); lsSet(USERS_KEY, JSON.stringify(l)); }
+async function userScreen(){
+  USER = null; UKEY = null; nav.style.display = "none"; setSync(); app.onclick = null;
+  app.innerHTML = `
+    <h1 style="margin-top:12px">PESQUISA DE PREÇO</h1>
+    <p class="sub" style="font-size:16px;margin:0 0 18px">Quem está pesquisando?</p>
+    <div class="list" id="ul" style="margin-top:0"><div class="status"><span class="spin"></span> Carregando usuários…</div></div>
+    <form id="nf" style="margin-top:24px">
+      <div class="field"><label>Novo usuário</label><input id="nn" maxlength="40" placeholder="Seu nome" autocomplete="off"></div>
+      <button class="btn btn-orange" style="width:100%">Entrar</button>
+    </form>`;
+  app.querySelector("#nf").onsubmit = e => {
+    e.preventDefault();
+    const n = cleanText(app.querySelector("#nn").value.replace(/[^\p{L}\p{N} ._-]/gu, ""), 40);
+    if (!n) return toast("Digite o seu nome");
+    const same = names.find(x => x.toLowerCase() === n.toLowerCase());
+    enterUser(same || n);
+  };
+  let names = knownUsers();
+  names.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const ul = app.querySelector("#ul"); if (!ul) return;
+  ul.innerHTML = names.length ? names.map(n => `<button class="ubtn" data-u="${esc(n)}"><span class="av">${esc(n.trim()[0].toUpperCase())}</span>${esc(n)}</button>`).join("")
+    : `<p class="hint">Nenhum usuário ainda. Digite o seu nome abaixo para começar.</p>`;
+  ul.onclick = e => { const b = e.target.closest("[data-u]"); if (b) enterUser(b.dataset.u); };
+}
+async function enterUser(name){
+  USER = name; UKEY = slug(name); lsSet(USER_KEY, name); rememberUser(name);
+  nav.style.display = ""; openCompetitorId = null; query = "";
+  const local = loadLocal();
+  S = local || normalizeState(blankState());
+  if (location.hash !== "#pesquisa") history.replaceState(null, "", "#pesquisa");
+  render();
+  offerLegacy();
+  if (S.selectedCompetitorId) warmOCR();
+  setTimeout(retryOfflinePending, 3000);
+}
+async function switchUser(){
+  if (CLOUD) return logout();
+  lsDel(USER_KEY); close(); userScreen();
+}
+/* dados do site antigo (antes de ter usuários) neste aparelho */
+function offerLegacy(){
+  const raw = lsGet(LEGACY_KEY); if (!raw) return;
+  let old; try { old = normalizeState(JSON.parse(raw)); } catch(e) { return; }
+  if (!old.prices.length && !old.competitors.length) { lsDel(LEGACY_KEY); return; }
+  modal(`<h2>Trazer a pesquisa deste celular?</h2>
+    <p class="sub">Encontrei neste aparelho uma pesquisa feita antes dos usuários: ${old.competitors.length} concorrente(s) e ${old.prices.length} preço(s).
+    Quer colocar no usuário <b>${esc(USER)}</b>? Isso substitui o que esse usuário tiver hoje.</p>
+    <div class="foot"><button class="btn btn-ghost" data-n>Agora não</button><button class="btn btn-orange" data-y>Trazer</button></div>`,
+  m => {
+    m.querySelector("[data-n]").onclick = close;
+    m.querySelector("[data-y]").onclick = async () => {
+      close(); S = old;
+      for (const k of Object.keys(S.photos)) {   // fotos antigas -> usuário (e nuvem)
+        try { const b = await PhotoDB.getRaw(k); if (b) { await PhotoDB.put(k, b); uploadPhoto(k, b); } else delete S.photos[k]; } catch(e) {}
+      }
+      lsSet(LEGACY_KEY + ":importado", raw); lsDel(LEGACY_KEY);
+      save(); render(); toast("Pesquisa trazida para " + USER);
+    };
+  });
+}
+
+/* ---------- login (com nuvem): Entrar, Esqueci minha senha, Nova senha ---------- */
+let loginFails = 0, loginBlockedUntil = 0;
+function loginScreen(msg){
+  USER = null; UKEY = null; nav.style.display = "none"; setSync(); app.onclick = null; close();
+  app.innerHTML = `
+    <h1 style="margin-top:12px">PESQUISA DE PREÇO</h1>
+    <p class="sub" style="font-size:16px;margin:0 0 18px">Entre com o seu e-mail e senha.</p>
+    ${msg ? `<div class="status warn" style="margin:-6px 0 14px">${esc(msg)}</div>` : ""}
+    <form id="lf" autocomplete="on">
+      <div class="field"><label>E-mail</label><input id="le" type="email" inputmode="email" autocomplete="username" maxlength="120" required></div>
+      <div class="field" style="margin-top:18px"><label>Senha</label><input id="lp" type="password" autocomplete="current-password" maxlength="72" required></div>
+      <button class="btn btn-orange" id="lb" style="width:100%;margin-top:4px">Entrar</button>
+    </form>
+    <button class="btn btn-ghost" id="forgot" style="width:100%;margin-top:10px;color:var(--primary)">Esqueci minha senha</button>
+    <p class="hint" style="text-align:center;margin-top:18px">Não tem acesso? Peça para a responsável cadastrar o seu e-mail.</p>`;
+  const le = app.querySelector("#le"), lp = app.querySelector("#lp"), lb = app.querySelector("#lb");
+  const last = lsGet("dscanner-ultimo-email"); if (last) le.value = last;
+  app.querySelector("#lf").onsubmit = async e => {
+    e.preventDefault();
+    if (Date.now() < loginBlockedUntil) return toast(`Muitas tentativas. Aguarde ${Math.ceil((loginBlockedUntil - Date.now()) / 1000)} segundos.`);
+    const email = le.value.trim().toLowerCase(), pw = lp.value;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast("Digite um e-mail válido");
+    if (!pw) return toast("Digite a senha");
+    lb.disabled = true; lb.textContent = "Entrando…";
+    try {
+      await Auth.signIn(email, pw);
+      loginFails = 0; lsSet("dscanner-ultimo-email", email);
+      document.querySelectorAll(".toast").forEach(x => x.remove());
+      enterAccount();
+    } catch(err) {
+      loginFails++;
+      if (loginFails >= 5) { loginBlockedUntil = Date.now() + 30000; loginFails = 0; }
+      toast(navigator.onLine === false ? "Sem internet. Conecte para entrar." : err.message);
+      lb.disabled = false; lb.textContent = "Entrar"; lp.value = ""; lp.focus();
+    }
+  };
+  app.querySelector("#forgot").onclick = () => forgotDialog(le.value.trim().toLowerCase());
+}
+function forgotDialog(email){
+  modal(`<h2>Esqueci minha senha</h2>
+    <p class="sub" style="margin-top:-6px">Digite o e-mail cadastrado. Vamos mandar um link para você criar uma senha nova.</p>
+    <form data-f><div class="field"><label>E-mail</label><input data-e type="email" inputmode="email" maxlength="120" value="${esc(email || "")}"></div>
+    <div class="foot"><button type="button" class="btn btn-ghost" data-x>Cancelar</button><button class="btn btn-orange">Enviar link</button></div></form>`,
+  m => {
+    m.querySelector("[data-x]").onclick = close;
+    m.querySelector("[data-f]").onsubmit = async e => {
+      e.preventDefault();
+      const em = m.querySelector("[data-e]").value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return toast("Digite um e-mail válido");
+      try { await Auth.recover(em); } catch(err) {}
+      close();
+      modal(`<h2>Confira o seu e-mail</h2>
+        <p class="sub">Se <b>${esc(em)}</b> estiver cadastrado, você vai receber em alguns minutos um link para criar uma senha nova. Veja também a caixa de spam.</p>
+        <p class="sub">Abra o link <b>neste mesmo aparelho</b>.</p>
+        <div class="foot"><button class="btn btn-orange" data-x>Entendi</button></div>`, m2 => { m2.querySelector("[data-x]").onclick = close; });
+    };
+  });
+}
+function newPasswordScreen(){
+  nav.style.display = "none"; app.onclick = null; close();
+  app.innerHTML = `
+    <h1 style="margin-top:12px">CRIAR SENHA NOVA</h1>
+    <p class="sub" style="margin:0 0 18px">Conta: <b>${esc(SESSION.user.email)}</b></p>
+    <form id="pf">
+      <div class="field"><label>Senha nova (mínimo 8 caracteres)</label><input id="p1" type="password" autocomplete="new-password" maxlength="72"></div>
+      <div class="field" style="margin-top:18px"><label>Repita a senha nova</label><input id="p2" type="password" autocomplete="new-password" maxlength="72"></div>
+      <button class="btn btn-orange" id="pb" style="width:100%">Salvar senha</button>
+    </form>`;
+  app.querySelector("#pf").onsubmit = async e => {
+    e.preventDefault();
+    const a = app.querySelector("#p1").value, b = app.querySelector("#p2").value;
+    if (a.length < 8 || !/[A-Za-z]/.test(a) || !/\d/.test(a)) return toast("Use pelo menos 8 caracteres, com letras e números");
+    if (a !== b) return toast("As duas senhas não são iguais");
+    const pb = app.querySelector("#pb"); pb.disabled = true;
+    try { await Auth.setPassword(a); toast("Senha nova salva!"); enterAccount(); }
+    catch(err) { pb.disabled = false; toast(err.message); }
+  };
+}
+/* link do e-mail ("esqueci minha senha"): chega com #access_token=…&type=recovery */
+function handleAuthRedirect(){
+  const h = location.hash.slice(1);
+  if (!/(^|&)(access_token|error)=/.test(h)) return false;
+  const p = new URLSearchParams(h);
+  history.replaceState(null, "", location.pathname + "#pesquisa");
+  if (p.get("error")) { loginScreen("O link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\"."); return true; }
+  const at = p.get("access_token"), rt = p.get("refresh_token"), type = p.get("type");
+  (async () => {
+    try {
+      const user = await Auth.userFromToken(at);
+      Auth.store({ access_token: at, refresh_token: rt, expires_in: num(p.get("expires_in")) || 3600, user });
+      if (type === "recovery" || type === "invite") newPasswordScreen(); else enterAccount();
+    } catch(e) { loginScreen("O link expirou ou já foi usado. Peça um novo em \"Esqueci minha senha\"."); }
+  })();
+  return true;
+}
+async function enterAccount(){
+  USER = SESSION.user.email; UKEY = SESSION.user.id;
+  nav.style.display = ""; openCompetitorId = null; query = ""; close();
+  const local = loadLocal();
+  S = local || normalizeState(blankState());
+  if (location.hash !== "#pesquisa") history.replaceState(null, "", "#pesquisa");
+  render(); setSync("wait");
+  try {
+    const row = await Cloud.load();
+    if (UKEY !== SESSION?.user?.id) return;
+    const pending = lsGet(pendKey());
+    if (row && row.dados && !(pending && local)) { S = normalizeState(row.dados); lsSet(stateKey(), JSON.stringify(S)); render(); setSync("ok"); }
+    else { lsSet(pendKey(), "1"); await push(); }
+  } catch(e) {
+    if (e && e.expired) return sessionExpired();
+    setSync("off");
+  }
+  offerImport();
+  if (S.selectedCompetitorId) warmOCR();
+  setTimeout(retryOfflinePending, 3000);
+}
+function sessionExpired(){
+  Auth.signOut();
+  loginScreen("Sua sessão expirou. Entre de novo (nada do que você fez neste aparelho foi perdido).");
+}
+async function logout(){
+  confirmBox("Sair da conta", `Sair da conta ${USER}? Seus dados continuam salvos na nuvem.`, "Sair", async () => {
+    clearTimeout(pushTimer);
+    if (lsGet(pendKey())) { await push(); if (lsGet(pendKey())) return toast("Há alterações ainda não enviadas. Conecte à internet e tente de novo."); }
+    await Auth.signOut(); loginScreen();
+  });
+}
+/* dados que já estavam neste aparelho (antes do login): oferece trazer para a conta, uma vez */
+function offerImport(){
+  const doneKey = "dscanner-importacao-vista:" + UKEY;
+  if (lsGet(doneKey)) return;
+  const cands = [];
+  const legacy = lsGet(LEGACY_KEY); if (legacy) cands.push({ label: "Pesquisa antiga (antes dos usuários)", key: LEGACY_KEY, prefix: "" });
+  for (const n of knownUsers()) { const k = "dscanner-dados:" + slug(n); if (lsGet(k)) cands.push({ label: "Usuário " + n, key: k, prefix: slug(n) + "|" }); }
+  const ok = cands.map(c => { try { const s = normalizeState(JSON.parse(lsGet(c.key))); return s.prices.length || s.competitors.length ? { ...c, s } : null; } catch(e) { return null; } }).filter(Boolean);
+  if (!ok.length) { lsSet(doneKey, "1"); return; }
+  modal(`<h2>Trazer pesquisa deste aparelho?</h2>
+    <p class="sub" style="margin-top:-6px">Encontrei neste aparelho pesquisas feitas antes do login. Escolha uma para colocar na sua conta <b>${esc(USER)}</b> (substitui o que a conta tiver hoje):</p>
+    <div class="list" style="margin-top:8px">${ok.map((c, i) => `<button class="ubtn" data-i="${i}" style="font-size:15px">${esc(c.label)}<small style="display:block;font-weight:400;color:var(--muted)">${c.s.competitors.length} concorrente(s) · ${c.s.prices.length} preço(s)</small></button>`).join("")}</div>
+    <div class="foot"><button class="btn btn-ghost" data-n>Agora não</button></div>`,
+  m => {
+    m.querySelector("[data-n]").onclick = () => { lsSet(doneKey, "1"); close(); };
+    m.onclick = async e => {
+      const b = e.target.closest("[data-i]"); if (!b) return;
+      const c = ok[+b.dataset.i]; close(); S = c.s;
+      for (const k of Object.keys(S.photos)) {   // fotos antigas -> conta (e nuvem)
+        try { const bl = await PhotoDB.getRaw(c.prefix + k); if (bl) { await PhotoDB.put(k, bl); uploadPhoto(k, bl); } else delete S.photos[k]; } catch(err) {}
+      }
+      lsSet(c.key + ":importado", lsGet(c.key)); lsDel(c.key); lsSet(doneKey, "1");
+      save(); render(); toast("Pesquisa trazida para a sua conta");
+    };
+  });
+}
+
+
+/* ---------- instalar no celular (ícone na tela inicial) ---------- */
+const Instala = (() => {
+  const KEY = "dscanner-instala-adiado", DIAS = 7;
+  let evt = null;
+  const instalado = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ehIphone = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const adiado = () => { const t = +(lsGet(KEY) || 0); return t && Date.now() - t < DIAS * 864e5; };
+  function fechar(adiar){ document.querySelectorAll(".instala").forEach(x => x.remove()); if (adiar) lsSet(KEY, String(Date.now())); }
+  function mostrar(){
+    if (instalado() || adiado() || document.querySelector(".instala")) return;
+    const iphone = ehIphone() && !evt;
+    if (!evt && !iphone) return;
+    const d = document.createElement("div"); d.className = "instala";
+    d.innerHTML = `<img src="icone-192.png" alt="">
+      <div class="tx"><b>Instalar Pesquisa de Preços</b>${iphone
+        ? `No Safari, toque em <b style="display:inline;font-size:14px">Compartilhar</b> <span aria-hidden="true">(□↑)</span> e depois em <b style="display:inline;font-size:14px">Adicionar à Tela de Início</b>.`
+        : `Coloque o ícone na tela do celular e abra como aplicativo.`}</div>
+      <div class="bt">${iphone ? "" : `<button class="btn btn-orange" data-i>Instalar</button>`}<button class="btn btn-ghost" data-n>${iphone ? "Entendi" : "Agora não"}</button></div>`;
+    document.body.appendChild(d);
+    d.querySelector("[data-n]").onclick = () => fechar(true);
+    const bi = d.querySelector("[data-i]");
+    if (bi) bi.onclick = async () => { const e = evt; evt = null; fechar(false); if (!e) return; e.prompt(); try { const r = await e.userChoice; if (r && r.outcome !== "accepted") lsSet(KEY, String(Date.now())); } catch(err) {} };
+  }
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); evt = e; setTimeout(mostrar, 1500); });
+  window.addEventListener("appinstalled", () => { evt = null; fechar(false); toast("Instalado! Procure o ícone na tela do celular"); });
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+  }
+  setTimeout(mostrar, 3000);   // iPhone não tem o aviso automático: mostra o passo a passo
+  return { mostrar };
+})();
+
+window.addEventListener("hashchange", () => { if (CLOUD && handleAuthRedirect()) return; if (!USER) return CLOUD ? (SESSION ? null : loginScreen()) : userScreen(); openCompetitorId = null; organizing = false; selecting = null; app.onclick = null; render(); window.scrollTo(0,0); });
+(function boot(){
+  if (CLOUD) {
+    if (handleAuthRedirect()) return;          // veio do link do e-mail (senha nova)
+    if (Auth.load()) return enterAccount();     // já entrou antes neste aparelho
+    return loginScreen();
+  }
+  const u = lsGet(USER_KEY);                    // sem nuvem: usuários só neste aparelho
+  if (u) enterUser(u); else userScreen();
+})();
+</script>
+</body>
+</html>
