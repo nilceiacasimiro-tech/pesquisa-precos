@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#003399">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-TXW2VR3sj9/ppXAWeT8BDvU8Xpls4zey11r+q6JCugc=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uiF1Nkq+EtKe/uv4Y9jx0xLqY0WKpz/E5pMdbZnsPQs=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
 <title>Pesquisa de Preços</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icone-192.png">
@@ -259,7 +259,7 @@ function normalizeState(s){
   out.aliases = arr(s.aliases).filter(a => a && /^\d{8,14}$/.test(String(a.ean)) && isId(a.productId)).slice(-3000)
     .map(a => ({ cid: isId(a.cid) ? +a.cid : null, ean: String(a.ean), toks: [], productId: +a.productId }));
   out.pending = arr(s.pending).filter(p => p && isId(p.id) && isId(p.cid)).slice(-500)
-    .map(p => ({ id: +p.id, cid: +p.cid, at: num(p.at) || 0, price: money(p.price), text: String(p.text ?? "").slice(0, 4000),
+    .map(p => ({ id: +p.id, cid: +p.cid, at: num(p.at) || 0, shot: num(p.shot) || num(p.at) || null, price: money(p.price), text: String(p.text ?? "").slice(0, 4000),
       ean: /^\d{8,14}$/.test(String(p.ean)) ? String(p.ean) : null, darkUnread: p.darkUnread === true,
       guess: isId(p.guess) ? +p.guess : null, motivo: p.motivo === "preço" ? "preço" : "item", retry: p.retry === true, shelf: p.shelf === true }));
   out.orders = {};
@@ -893,7 +893,58 @@ function photoViewer(key, title){
 async function fileToImage(file){
   const url = URL.createObjectURL(file); const img = new Image();
   await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = url; });
-  return { img, url };
+  let shotAt = null; try { shotAt = await photoTime(file); } catch(e) {}
+  return { img, url, shotAt };
+}
+/* quando a foto foi tirada: data gravada na foto (EXIF); senão a data do arquivo; senão agora */
+async function exifDate(file){
+  const buf = await file.slice(0, 262144).arrayBuffer(), dv = new DataView(buf);
+  if (buf.byteLength < 4 || dv.getUint16(0) !== 0xFFD8) return null;
+  let o = 2;
+  while (o + 4 < buf.byteLength) {
+    const mk = dv.getUint16(o), len = dv.getUint16(o + 2);
+    if (mk === 0xFFE1 && dv.getUint32(o + 4) === 0x45786966) {
+      const t = o + 10, le = dv.getUint16(t) === 0x4949;
+      const u16 = x => dv.getUint16(t + x, le), u32 = x => dv.getUint32(t + x, le);
+      const str = (x, n) => { let r = ""; for (let i = 0; i < n - 1 && t + x + i < buf.byteLength; i++) r += String.fromCharCode(dv.getUint8(t + x + i)); return r; };
+      const tags = ifd => { const out = {}; if (t + ifd + 2 > buf.byteLength) return out; const n = u16(ifd);
+        for (let i = 0; i < n && t + ifd + 2 + i * 12 + 12 <= buf.byteLength; i++) { const e = ifd + 2 + i * 12; out[u16(e)] = { cnt: u32(e + 4), val: u32(e + 8) }; } return out; };
+      const t0 = tags(u32(4)); let raw = null;
+      if (t0[0x8769]) { const ex = tags(t0[0x8769].val); if (ex[0x9003]) raw = str(ex[0x9003].val, ex[0x9003].cnt); }
+      if (!raw && t0[0x0132]) raw = str(t0[0x0132].val, t0[0x0132].cnt);
+      const m = /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d)/.exec(raw || "");
+      return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : null;
+    }
+    if ((mk & 0xFF00) !== 0xFF00 || mk === 0xFFDA) break;
+    o += 2 + len;
+  }
+  return null;
+}
+async function photoTime(file){
+  const now = Date.now(), ok = t => t && t > now - 400 * 864e5 && t < now + 36e5;
+  if (ok(file.shotAt)) return file.shotAt;
+  try { const t = await exifDate(file); if (ok(t)) return t; } catch(e) {}
+  if (ok(file.lastModified)) return file.lastModified;
+  return null;
+}
+/* faixa embaixo da foto: 📍 Loja · dd/mm/aaaa · hh:mm (gravada na própria imagem) */
+function stampPhoto(src, loja, ts){
+  const W = src.width, H = Math.max(40, Math.round(W * 0.085));
+  const c = document.createElement("canvas"); c.width = W; c.height = src.height + H;
+  const g = c.getContext("2d");
+  g.drawImage(src, 0, 0);
+  g.fillStyle = "#002270"; g.fillRect(0, src.height, W, H);
+  const d = new Date(ts || Date.now()), z = n => String(n).padStart(2, "0");
+  const quando = `${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()}  ·  ${z(d.getHours())}:${z(d.getMinutes())}`;
+  let fs = Math.round(H * 0.46);
+  const FONT = '-apple-system, "Segoe UI", Roboto, Arial, sans-serif', y = src.height + H / 2;
+  const fit = () => { g.font = `700 ${fs}px ${FONT}`; const a = g.measureText("📍 " + loja).width; g.font = `400 ${fs}px ${FONT}`; return a + g.measureText("  ·  " + quando).width; };
+  while (fs > 10 && fit() > W - H * 0.7) fs--;
+  let x = Math.round(H * 0.35);
+  g.textBaseline = "middle"; g.fillStyle = "#FFFFFF";
+  g.font = `700 ${fs}px ${FONT}`; g.fillText("📍 " + loja, x, y); x += g.measureText("📍 " + loja).width;
+  g.font = `400 ${fs}px ${FONT}`; g.fillStyle = "#DCE4F5"; g.fillText("  ·  " + quando, x, y);
+  return c;
 }
 function imageToCanvas(img, max, gray, upscale){
   const s = upscale ? max / Math.max(img.naturalWidth, img.naturalHeight) : Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
@@ -1313,7 +1364,7 @@ function finishQuick(loaded){ URL.revokeObjectURL(loaded.url); refreshResearch()
 async function addPending(ctx, sure, retry){
   const id = newId();
   try { await PhotoDB.put("pend_" + id, await canvasToBlob(imageToCanvas(ctx.loaded.img, ctx.shelf ? 3200 : retry ? 2000 : 1280, false), retry || ctx.shelf ? 0.85 : 0.72)); } catch(e) {}
-  S.pending.push({ id, cid: ctx.cid, at: Date.now(), price: ctx.price || null, text: ctx.text || "", ean: ctx.ean || null,
+  S.pending.push({ id, cid: ctx.cid, at: Date.now(), shot: ctx.shotAt || (ctx.loaded && ctx.loaded.shotAt) || Date.now(), price: ctx.price || null, text: ctx.text || "", ean: ctx.ean || null,
     darkUnread: !!ctx.darkUnread, guess: ctx.chosen ? ctx.chosen.id : null, motivo: sure ? "preço" : "item", retry: !!retry, shelf: !!ctx.shelf });
   save();
 }
@@ -1325,6 +1376,7 @@ async function retryOfflinePending(){
     let blob = null; try { blob = await PhotoDB.get("pend_" + p.id); } catch(e) {}
     if (!blob) { p.retry = false; continue; }
     S.pending = S.pending.filter(x => x.id !== p.id); PhotoDB.del("pend_" + p.id);
+    blob.shotAt = p.shot || p.at;   // mantém a hora em que a foto foi tirada
     quickAdd([blob], p.cid, p.shelf ? "shelf" : "tag");
   }
   save(); refreshResearch();
@@ -1392,13 +1444,13 @@ async function resolvePending(id){
   if (!comp) { dropPending(id); return pendingScreen(); }
   let blob = null; try { blob = await PhotoDB.get("pend_" + id); } catch(e) {}
   if (blob && p.shelf && aiAvailable()) {   // foto de prateleira: tenta ler de novo
-    dropPending(id); close(); quickAdd([blob], p.cid, "shelf"); refreshResearch();
+    blob.shotAt = p.shot || p.at; dropPending(id); close(); quickAdd([blob], p.cid, "shelf"); refreshResearch();
     return toast("🗂 Lendo a foto de prateleira de novo…");
   }
   if (!blob) { toast("A foto desta pendência ficou em outro aparelho"); blob = new Blob([""], { type: "image/png" }); }
   let loaded; try { loaded = await fileToImage(blob); } catch(e) { loaded = { img: new Image(), url: "" }; }
   const ctx = { cid: p.cid, comp, file: blob, loaded, fixedProduct: null, chosen: null, text: p.text, ean: p.ean, price: p.price,
-    darkUnread: p.darkUnread, ranked: [], pendingId: id };
+    darkUnread: p.darkUnread, ranked: [], pendingId: id, shotAt: p.shot || p.at };
   identify(ctx);
   if (!ctx.chosen && p.guess) ctx.chosen = S.products.find(x => x.id === p.guess) || null;
   confirmScreen(ctx, p.motivo === "preço" ? "Não consegui ler o preço. Digite o valor e salve." : "Escolha o item desta etiqueta. Depois ele reconhece sozinho.");
@@ -1411,7 +1463,7 @@ async function autoResolvePending(cid){
     let blob = null; try { blob = await PhotoDB.get("pend_" + p.id); } catch(e) {}
     if (!blob) continue;
     const loaded = await fileToImage(blob);
-    Object.assign(ctx, { comp: S.competitors.find(c => c.id === cid), loaded, file: blob });
+    Object.assign(ctx, { comp: S.competitors.find(c => c.id === cid), loaded, file: blob, shotAt: p.shot || p.at });
     await commit(ctx, ctx.chosen, p.price, p.darkUnread);
     dropPending(p.id); URL.revokeObjectURL(loaded.url);
     toast(`✓ Pendência resolvida sozinha: ${ctx.chosen.name}`);
@@ -1613,7 +1665,7 @@ ${aiList()}`;
     const key = t.p ? "p" + t.p.id : t.ean ? "e" + t.ean : null;
     if (key && seen.has(key)) continue; if (key) seen.add(key);
     let cimg; try { cimg = await fileToImage(blobs[r.idx]); } catch(e) { continue; }
-    const c = { cid: it.cid, comp, file: blobs[r.idx], loaded: cimg, text: t.name, ean: t.ean, price: t.price, chosen: t.p, ranked: [], darkUnread: false };
+    const c = { cid: it.cid, comp, file: blobs[r.idx], loaded: cimg, shotAt: loaded.shotAt, text: t.name, ean: t.ean, price: t.price, chosen: t.p, ranked: [], darkUnread: false };
     if (t.sure && t.p && t.price) {
       const flag = bigChange(it.cid, t.p, t.price);
       await commit(c, t.p, t.price, flag); ok++; if (flag) chk++;
@@ -1742,7 +1794,9 @@ async function commit(ctx, prod, price, check){
   if (ctx.ean && prod.barCode !== ctx.ean) rememberAlias(cid, "", prod.id, ctx.ean);
   save();   // grava o preço na hora
   try {     // guarda a foto nova no lugar da antiga
-    const blob = await canvasToBlob(imageToCanvas(ctx.loaded.img, 1280, false), 0.72);
+    const loja = (S.competitors.find(x => x.id === cid) || {}).name || "";
+    const quando = ctx.shotAt || (ctx.loaded && ctx.loaded.shotAt) || Date.now();
+    const blob = await canvasToBlob(stampPhoto(imageToCanvas(ctx.loaded.img, 1280, false), loja, quando), 0.72);
     await PhotoDB.put(k, blob); S.photos[k] = Date.now();
     uploadPhoto(k, blob);
   } catch(e) { toast("Preço salvo, mas a foto não pôde ser guardada"); }
