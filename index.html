@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#003399">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-uiF1Nkq+EtKe/uv4Y9jx0xLqY0WKpz/E5pMdbZnsPQs=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-MzRota3CFa5KIQ6yKrjUL0xdNkS11dDOReRDpulxP+4=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; img-src 'self' data: blob: https://jyonibfzegkcsyjjtfao.supabase.co; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'self'; upgrade-insecure-requests">
 <title>Pesquisa de Preços</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icone-192.png">
@@ -2300,6 +2300,14 @@ function renderSelect(c, withPrice){
 }
 
 /* ---------- organizar a ordem dos itens: geral (cid = null) ou de um concorrente ---------- */
+/* itens lançados hoje neste concorrente (preço digitado ou foto), na ordem em que foram lançados */
+function todaySequence(cid){
+  const hoje = dayKey(Date.now()), t = new Map();
+  const add = (pid, ts) => { if (pid != null && ts && dayKey(ts) === hoje && (!t.has(pid) || ts < t.get(pid))) t.set(pid, ts); };
+  for (const pr of S.prices) if (pr.competitorId === cid && !pr.notFound && pr.price > 0) add(pr.productId, pr.priceAt || pr.updatedAt);
+  for (const p of S.products) add(p.id, S.photos[photoKey(cid, p.id)]);
+  return [...t.entries()].filter(([pid]) => S.products.some(p => p.id === pid)).sort((a, b) => a[1] - b[1]).map(([pid]) => pid);
+}
 function renderOrganize(cid){
   const comp = cid && S.competitors.find(c => c.id === cid);
   if (cid && !comp) { organizing = false; return render(); }
@@ -2320,6 +2328,7 @@ function renderOrganize(cid){
       <button class="btn btn-white" id="grp">🧺 Juntar parecidos</button>
       <button class="btn btn-white" id="addP2">+ Produto</button>
     </div>
+    ${comp ? `<button class="btn btn-white" id="today" style="width:100%;margin:-2px 0 10px">🕒 Ordenar pela sequência de hoje</button>` : ""}
     ${own ? `<button class="btn btn-ghost" id="reset" style="width:100%;margin:-4px 0 8px;color:var(--red)">↺ Voltar para a ordem geral</button>` : ""}
     <div id="olist">${productsFor(cid).map(p => `<div class="orow" data-id="${p.id}">
       <span class="handle" aria-label="Arrastar">☰</span>
@@ -2347,6 +2356,17 @@ function renderOrganize(cid){
     else S.products = groupedProducts();
     save(); render(); toast("Itens parecidos agrupados");
   });
+  const tb = app.querySelector("#today");
+  if (tb) tb.onclick = () => {
+    const ent = todaySequence(cid);
+    if (ent.length < 2) return toast(ent.length ? "Só 1 item lançado hoje neste concorrente." : "Nenhum preço lançado hoje neste concorrente.");
+    confirmBox("Ordenar pela sequência de hoje", `Colocar os ${ent.length} itens lançados hoje no ${comp.name} na ordem em que você lançou (preço digitado ou foto)? Os outros itens ficam onde estão. Depois você ainda pode ajustar à mão.`, "Ordenar", () => {
+      const o = productsFor(cid).map(p => p.id), set = new Set(ent);
+      const slots = o.map((id, i) => set.has(id) ? i : -1).filter(i => i >= 0);
+      slots.forEach((pos, j) => { o[pos] = ent[j]; });
+      S.orders[cid] = o; save(); render(); toast("Ordem de hoje aplicada");
+    });
+  };
   const rs = app.querySelector("#reset");
   if (rs) rs.onclick = () => confirmBox("Ordem geral", `O ${comp.name} volta a usar a ordem geral? A ordem própria dele será apagada.`, "Voltar", () => {
     delete S.orders[cid]; save(); render(); toast("Usando a ordem geral");
